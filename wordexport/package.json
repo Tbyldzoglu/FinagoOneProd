@@ -1,0 +1,26 @@
+{
+  "name": "word-export",
+  "version": "1.0.0",
+  "description": "Word template export with database data",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "docx-templates": "^4.14.1",
+    "dotenv": "^16.3.1",
+    "mssql": "^10.0.1",
+    "tedious": "^16.7.1",
+    "node-fetch": "^3.3.2"
+  },
+  "keywords": [
+    "word",
+    "template",
+    "export",
+    "database"
+  ],
+  "author": "FINAGO",
+  "license": "MIT"
+}

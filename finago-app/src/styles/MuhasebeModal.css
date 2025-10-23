@@ -1,0 +1,374 @@
+/**
+ * Muhasebe Modal Stilleri
+ * Text area ve LLM chat alanı içeren modal
+ */
+
+/* Validation Banner Styles */
+.validation-banner {
+  background: linear-gradient(135deg, #fffacd, #ffeaa7);
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 10px 0;
+  font-size: 13px;
+  line-height: 1.4;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.validation-errors {
+  margin-bottom: 8px;
+}
+
+.validation-errors strong {
+  color: #d63031;
+  font-weight: 600;
+}
+
+.validation-warnings strong {
+  color: #f39c12;
+  font-weight: 600;
+}
+
+.validation-banner ul {
+  margin: 6px 0 0 16px;
+  padding: 0;
+  list-style-type: disc;
+}
+
+.validation-banner li {
+  margin: 2px 0;
+  color: #333;
+}
+
+.validation-errors li {
+  color: #d63031;
+}
+
+.validation-warnings li {
+  color: #e17055;
+}
+
+.muhasebe-modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 999999 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  animation: overlayFadeIn 0.3s ease-out;
+}
+
+.muhasebe-modal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  max-height: none !important;
+  background: var(--bg-primary, #1a1a1a);
+  backdrop-filter: none;
+  box-shadow: inset 0 0 0 1px var(--border-primary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 999999 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+/* Modal Header */
+.muhasebe-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm);
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--card-gradient, #2a2a2a);
+  backdrop-filter: none;
+  flex-shrink: 0;
+}
+
+.modal-title {
+  color: var(--text-primary, #ffffff);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.close-button {
+  background: var(--bg-tertiary, #3a3a3a);
+  border: 1px solid var(--border-secondary, #555);
+  color: var(--text-secondary, #cccccc);
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background: var(--bg-hover, #4a4a4a);
+  color: var(--text-primary, #ffffff);
+  transform: scale(1.05);
+}
+
+/* Modal Content - Split Layout */
+.muhasebe-content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+}
+
+/* Text Panel (Sol Taraf) */
+.text-panel {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-primary);
+  background: var(--bg-secondary, #2d2d2d);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-secondary);
+  background: var(--bg-tertiary, #3a3a3a);
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-weight: 600;
+  color: var(--text-primary, #ffffff);
+}
+
+.text-container {
+  flex: 1;
+  padding: var(--spacing-lg);
+  overflow: hidden;
+}
+
+.text-editor {
+  width: 100%;
+  height: 100%;
+  padding: var(--spacing-lg);
+  border: 1px solid var(--border-secondary, #555);
+  border-radius: 8px;
+  background: var(--bg-primary, #1a1a1a);
+  color: var(--text-primary, #ffffff);
+  font-size: 12px;
+  line-height: 1.6;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  resize: none;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.text-editor:focus {
+  border-color: var(--ai-primary, #00d4ff);
+  box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.1);
+  background: var(--bg-primary, #0a0a0a);
+}
+
+.text-editor::placeholder {
+  color: var(--text-muted, #888);
+  font-style: italic;
+}
+
+/* Chat Panel (Sağ Taraf) */
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary, #1a1a1a);
+}
+
+.muhasebe-chat {
+  border: none;
+  border-radius: 0;
+}
+
+/* Modal Footer */
+.muhasebe-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm);
+  border-top: 1px solid var(--border-primary);
+  background: var(--card-gradient, #2a2a2a);
+  backdrop-filter: none;
+  flex-shrink: 0;
+}
+
+.footer-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.save-status {
+  color: var(--text-muted, #888);
+  font-size: 0.9rem;
+}
+
+.char-count {
+  color: var(--text-secondary, #cccccc);
+  font-size: 0.9rem;
+  background: var(--bg-tertiary, #3a3a3a);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-secondary, #555);
+}
+
+.footer-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.cancel-button,
+.save-button {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  font-size: 0.9rem;
+}
+
+.cancel-button {
+  background: var(--bg-tertiary, #3a3a3a);
+  color: var(--text-secondary, #cccccc);
+  border: 1px solid var(--border-secondary, #555);
+}
+
+.cancel-button:hover {
+  background: var(--bg-hover, #4a4a4a);
+  color: var(--text-primary, #ffffff);
+}
+
+.save-button {
+  background: var(--ai-primary, #00d4ff);
+  color: var(--bg-primary, #1a1a1a);
+  border: 1px solid var(--ai-primary, #00d4ff);
+}
+
+.save-button:hover {
+  background: var(--ai-secondary, #00b8e6);
+  border-color: var(--ai-secondary, #00b8e6);
+  transform: translateY(-1px);
+}
+
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .muhasebe-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+  
+  .text-panel {
+    border-right: none;
+    border-bottom: 1px solid var(--border-primary);
+  }
+  
+  .chat-panel {
+    border-left: none;
+    border-top: 1px solid var(--border-secondary);
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-title {
+    font-size: 1.2rem;
+  }
+  
+  .footer-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .cancel-button,
+  .save-button {
+    width: 100%;
+  }
+  
+  .footer-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+  }
+}
+
+/* Dark mode optimizations */
+@media (prefers-color-scheme: dark) {
+  .muhasebe-modal {
+    background: var(--bg-primary, #0a0a0a);
+  }
+  
+  .text-editor {
+    background: var(--bg-primary, #0a0a0a);
+  }
+}
+
+/* Animation */
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Text editor scrollbar styling */
+.text-editor::-webkit-scrollbar {
+  width: 8px;
+}
+
+.text-editor::-webkit-scrollbar-track {
+  background: var(--bg-secondary, #2d2d2d);
+  border-radius: 4px;
+}
+
+.text-editor::-webkit-scrollbar-thumb {
+  background: var(--border-secondary, #555);
+  border-radius: 4px;
+}
+
+.text-editor::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted, #888);
+}

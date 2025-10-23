@@ -1,0 +1,409 @@
+/**
+ * MesajlarModal Styles
+ * Fullscreen modal with table + LLM chat split layout
+ */
+
+/**
+ * Modal Overlay & Container
+ */
+.mesajlar-modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 999999 !important;
+  overflow: hidden !important;
+}
+
+.mesajlar-modal-container {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: var(--bg-primary, #1a1a1a) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  z-index: 1000000 !important;
+}
+
+/**
+ * Modal Header
+ */
+.mesajlar-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  background: var(--bg-quaternary, #4a4a4a);
+  border-bottom: 1px solid var(--border-secondary);
+  flex-shrink: 0;
+}
+
+.mesajlar-modal-header h2 {
+  margin: 0;
+  color: var(--text-primary, #ffffff);
+  font-size: var(--font-lg);
+  font-weight: 600;
+}
+
+.mesajlar-close-button {
+  background: none;
+  border: none;
+  color: var(--text-primary, #ffffff);
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-normal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mesajlar-close-button:hover {
+  background: var(--bg-secondary, #2d2d2d);
+  color: var(--ai-primary);
+}
+
+/**
+ * Modal Content - Split Layout
+ */
+.mesajlar-content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 70% 30%;
+  overflow: hidden;
+}
+
+/**
+ * Table Panel (Sol Taraf)
+ */
+.table-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary, #2d2d2d);
+  border-right: 1px solid var(--border-secondary);
+  overflow: hidden;
+}
+
+.table-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--spacing-md);
+  background: var(--bg-secondary, #2d2d2d);
+  height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.table-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: var(--border-primary);
+}
+
+/**
+ * Table Section
+ */
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  background: var(--bg-quaternary, #4a4a4a);
+  border-bottom: 1px solid var(--border-secondary);
+  flex-shrink: 0;
+}
+
+.table-header h3 {
+  margin: 0;
+  color: var(--text-primary, #ffffff);
+  font-size: var(--font-md);
+  font-weight: 600;
+}
+
+.add-row-btn {
+  background: var(--ai-primary);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-sm);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.add-row-btn:hover {
+  background: var(--ai-secondary);
+  transform: translateY(-1px);
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 500px;
+}
+
+/**
+ * Mesajlar Table
+ */
+.mesajlar-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-secondary, #2d2d2d);
+  min-width: 1200px;
+  font-size: 11px;
+}
+
+.mesajlar-table thead th {
+  padding: 12px 15px;
+  color: var(--text-primary, #ffffff);
+  font-weight: 600;
+  font-size: 11px;
+  border-right: 1px solid var(--border-secondary);
+  text-align: left;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bg-quaternary, #4a4a4a);
+  white-space: nowrap;
+}
+
+.mesajlar-table thead th:last-child {
+  border-right: none;
+}
+
+.mesajlar-table tbody tr {
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.mesajlar-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.mesajlar-table tbody td {
+  padding: 12px 15px;
+  background: var(--bg-secondary, #2d2d2d);
+  vertical-align: middle;
+  border-right: 1px solid var(--border-secondary);
+}
+
+.mesajlar-table tbody td:last-child {
+  border-right: none;
+}
+
+/**
+ * Table Inputs
+ */
+.table-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary, #1a1a1a);
+  color: var(--text-primary, #ffffff);
+  font-size: 11px;
+  font-family: inherit;
+  transition: all var(--transition-normal);
+  min-height: 32px;
+  min-width: 120px;
+}
+
+.table-input.wide-input {
+  min-width: 200px;
+}
+
+.table-input:focus {
+  outline: none;
+  border-color: var(--ai-primary);
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+.table-input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+/**
+ * Delete Row Button
+ */
+.delete-row-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+}
+
+.delete-row-btn:hover:not(:disabled) {
+  background: #c82333;
+  transform: translateY(-1px);
+}
+
+.delete-row-btn:disabled {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/**
+ * Chat Panel (Sağ Taraf)
+ */
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary, #1a1a1a);
+}
+
+.panel-header {
+  padding: var(--spacing-sm);
+  background: var(--bg-quaternary, #4a4a4a);
+  border-bottom: 1px solid var(--border-secondary);
+  flex-shrink: 0;
+}
+
+.panel-header h3 {
+  margin: 0;
+  color: var(--text-primary, #ffffff);
+  font-size: var(--font-md);
+  font-weight: 600;
+}
+
+/**
+ * Modal Footer
+ */
+.mesajlar-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--bg-quaternary, #4a4a4a);
+  border-top: 1px solid var(--border-secondary);
+  flex-shrink: 0;
+}
+
+.modal-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-width: 100px;
+  justify-content: center;
+}
+
+.modal-btn.secondary {
+  background: var(--bg-secondary, #2d2d2d);
+  color: var(--text-primary, #ffffff);
+  border: 1px solid var(--border-secondary);
+}
+
+.modal-btn.secondary:hover {
+  background: var(--bg-tertiary, #3a3a3a);
+  border-color: var(--border-primary);
+}
+
+.modal-btn.primary {
+  background: var(--ai-primary);
+  color: white;
+}
+
+.modal-btn.primary:hover {
+  background: var(--ai-secondary);
+  transform: translateY(-1px);
+}
+
+/**
+ * Responsive Design
+ */
+@media (max-width: 1200px) {
+  .mesajlar-content {
+    grid-template-columns: 65% 35%;
+  }
+  
+  .table-container {
+    max-height: calc(50vh - 100px);
+  }
+  
+  .mesajlar-table {
+    min-width: 1000px;
+  }
+  
+  .table-input {
+    min-width: 100px;
+  }
+  
+  .table-input.wide-input {
+    min-width: 150px;
+  }
+}
+
+@media (max-width: 768px) {
+  .mesajlar-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: 60% 40%;
+  }
+  
+  .table-container {
+    padding: var(--spacing-xs);
+  }
+  
+  .table-input {
+    padding: 6px 8px;
+    font-size: 10px;
+    min-width: 80px;
+  }
+  
+  .table-input.wide-input {
+    min-width: 120px;
+  }
+  
+  .mesajlar-table {
+    min-width: 800px;
+    font-size: 10px;
+  }
+  
+  .mesajlar-table thead th,
+  .mesajlar-table tbody td {
+    padding: 8px 10px;
+  }
+}

@@ -1,0 +1,368 @@
+/**
+ * Theme Toggle Stilleri
+ * AI uygulamaları için modern Dark/Light mode toggle butonu
+ */
+
+.theme-toggle-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  position: relative;
+}
+
+.theme-toggle-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  transition: color var(--transition-normal);
+  white-space: nowrap;
+}
+
+/**
+ * Ana Toggle Butonu
+ */
+.theme-toggle {
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  transition: all var(--transition-normal);
+  border-radius: var(--radius-xl);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 4px;
+}
+
+/* Boyut varyantları */
+.theme-toggle.sm {
+  width: 40px;
+  height: 20px;
+}
+
+.theme-toggle.md {
+  width: 50px;
+  height: 26px;
+}
+
+.theme-toggle.lg {
+  width: 60px;
+  height: 32px;
+}
+
+/**
+ * Toggle Track (Arka Plan)
+ */
+.theme-toggle-track {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.1) 0%, 
+    rgba(255, 255, 255, 0.05) 100%);
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  transition: all var(--transition-bounce);
+  backdrop-filter: blur(10px);
+}
+
+.theme-toggle.light .theme-toggle-track {
+  background: linear-gradient(135deg, 
+    rgba(30, 41, 59, 0.1) 0%, 
+    rgba(30, 41, 59, 0.05) 100%);
+  border-color: rgba(30, 41, 59, 0.2);
+}
+
+.theme-toggle.dark .theme-toggle-track {
+  background: linear-gradient(135deg, 
+    rgba(0, 212, 255, 0.2) 0%, 
+    rgba(139, 92, 246, 0.2) 100%);
+  border-color: rgba(0, 212, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+}
+
+/**
+ * Arka Plan İkonları
+ */
+.theme-toggle-bg-icons {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+  pointer-events: none;
+}
+
+.sun-icon, .moon-icon {
+  font-size: 10px;
+  opacity: 0.6;
+  transition: all var(--transition-normal);
+}
+
+.theme-toggle.sm .sun-icon,
+.theme-toggle.sm .moon-icon {
+  font-size: 8px;
+  padding: 0 4px;
+}
+
+.theme-toggle.md .sun-icon,
+.theme-toggle.md .moon-icon {
+  font-size: 10px;
+  padding: 0 5px;
+}
+
+.theme-toggle.lg .sun-icon,
+.theme-toggle.lg .moon-icon {
+  font-size: 12px;
+  padding: 0 6px;
+}
+
+.theme-toggle.dark .sun-icon {
+  opacity: 0.3;
+  transform: scale(0.8);
+}
+
+.theme-toggle.light .moon-icon {
+  opacity: 0.3;
+  transform: scale(0.8);
+}
+
+/**
+ * Toggle Thumb (Hareket Eden Kısım)
+ */
+.theme-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  width: calc(50% - 4px);
+  height: calc(100% - 4px);
+  background: white;
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-bounce);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    0 4px 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.theme-toggle.light .theme-toggle-thumb {
+  left: 2px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(30, 41, 59, 0.1);
+}
+
+.theme-toggle.dark .theme-toggle-thumb {
+  left: calc(50% + 2px);
+  background: linear-gradient(135deg, #1a1a3a 0%, #2d2d5f 100%);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 10px rgba(0, 212, 255, 0.2);
+}
+
+/**
+ * Thumb İç İkon
+ */
+.theme-toggle-thumb-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-icon {
+  font-size: 12px;
+  transition: all var(--transition-normal);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.theme-toggle.sm .theme-icon {
+  font-size: 8px;
+}
+
+.theme-toggle.md .theme-icon {
+  font-size: 10px;
+}
+
+.theme-toggle.lg .theme-icon {
+  font-size: 14px;
+}
+
+.theme-icon.sun {
+  animation: sun-spin 3s linear infinite;
+}
+
+.theme-icon.moon {
+  animation: moon-glow 2s ease-in-out infinite alternate;
+}
+
+/**
+ * Glow Efekti
+ */
+.theme-toggle-glow {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, 
+    transparent 0%, 
+    var(--ai-primary) 50%, 
+    transparent 100%);
+  border-radius: var(--radius-xl);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+  z-index: -1;
+  filter: blur(8px);
+}
+
+.theme-toggle:hover .theme-toggle-glow {
+  opacity: 0.3;
+}
+
+.theme-toggle.dark:hover .theme-toggle-glow {
+  background: linear-gradient(135deg, 
+    transparent 0%, 
+    var(--ai-primary) 30%,
+    var(--ai-secondary) 70%, 
+    transparent 100%);
+}
+
+/**
+ * Parçacık Efekti
+ */
+.theme-toggle-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: var(--ai-primary);
+  border-radius: 50%;
+  opacity: 0;
+  transition: all var(--transition-normal);
+}
+
+.theme-toggle:hover .particle {
+  animation: particle-float 1.5s ease-in-out infinite;
+}
+
+.particle-1 { top: 20%; left: 15%; animation-delay: 0s; }
+.particle-2 { top: 60%; left: 25%; animation-delay: 0.2s; }
+.particle-3 { top: 30%; right: 20%; animation-delay: 0.4s; }
+.particle-4 { bottom: 40%; left: 30%; animation-delay: 0.6s; }
+.particle-5 { bottom: 20%; right: 15%; animation-delay: 0.8s; }
+.particle-6 { top: 70%; right: 30%; animation-delay: 1s; }
+
+/**
+ * Hover Efektleri
+ */
+.theme-toggle:hover {
+  transform: scale(1.05);
+}
+
+.theme-toggle:hover .theme-toggle-track {
+  border-color: var(--ai-primary);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+}
+
+.theme-toggle:hover .theme-toggle-thumb {
+  transform: scale(1.1);
+}
+
+.theme-toggle:active {
+  transform: scale(0.95);
+}
+
+/**
+ * Animasyonlar
+ */
+@keyframes sun-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes moon-glow {
+  0% { 
+    filter: drop-shadow(0 0 3px rgba(59, 130, 246, 0.5));
+    transform: scale(1);
+  }
+  100% { 
+    filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.8));
+    transform: scale(1.1);
+  }
+}
+
+@keyframes particle-float {
+  0%, 100% {
+    opacity: 0;
+    transform: translateY(0px);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-8px);
+  }
+}
+
+/**
+ * Responsive Ayarları
+ */
+@media (max-width: 768px) {
+  .theme-toggle-container {
+    gap: var(--spacing-xs);
+  }
+  
+  .theme-toggle-label {
+    font-size: 11px;
+  }
+}
+
+/**
+ * Reduced Motion Desteği
+ */
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle,
+  .theme-toggle-track,
+  .theme-toggle-thumb,
+  .theme-icon,
+  .particle {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/**
+ * High Contrast Mode
+ */
+@media (prefers-contrast: high) {
+  .theme-toggle-track {
+    border-width: 2px;
+  }
+  
+  .theme-toggle-thumb {
+    border-width: 2px;
+  }
+}

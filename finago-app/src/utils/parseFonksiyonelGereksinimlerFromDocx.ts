@@ -1,0 +1,324 @@
+import mammoth from 'mammoth';
+
+// Türkçe karakter normalizasyonu
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/ç/g, 'c')
+    .replace(/ğ/g, 'g')
+    .replace(/ı/g, 'i')
+    .replace(/ö/g, 'o')
+    .replace(/ş/g, 's')
+    .replace(/ü/g, 'u')
+    .replace(/[^\w\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/i c/g, 'ic')
+    .replace(/t e f t i s/g, 'teftis');
+}
+
+interface FonksiyonelGereksinimlerParseResult {
+  found: boolean;
+  mode: 'strict' | 'scan';
+  content: string;
+  contentLength: number;
+  matchedLabels: string[];
+  errors: string[];
+  warnings: string[];
+}
+
+// FONKSİYONEL GEREKSİNİMLER başlığını bul
+function findFonksiyonelGereksinimlerHeader(doc: Document): Element | null {
+  console.log('🔍 FONKSİYONEL GEREKSİNİMLER: Başlık aranıyor...');
+  
+  const searchTerms = [
+    'fonksiyonel gereksinimler',
+    'fonksiyonel',
+    'gereksinimler',
+    'functional requirements',
+    'requirements',
+    'functional',
+    'islevsel gereksinimler',
+    'islevsel',
+    '2. fonksiyonel',
+    '2.1 fonksiyonel',
+    '3. fonksiyonel',
+    '3.1 fonksiyonel'
+  ];
+  
+  console.log('🔍 FONKSİYONEL GEREKSİNİMLER: Başlık aranıyor...', searchTerms);
+  
+  // Önce h1-h6 başlıkları ara
+  const headings = doc.querySelectorAll('h1, h2, h3, h4, h5, h6');
+  console.log(`📋 ${headings.length} başlık elementi bulundu`);
+  
+  for (let i = 0; i < headings.length; i++) {
+    const heading = headings[i];
+    const text = heading.textContent?.trim() || '';
+    const normalized = normalizeText(text);
+    console.log(`🔍 Başlık ${i + 1}: "${text}" → "${normalized}"`);
+    
+    for (const term of searchTerms) {
+      if (normalized.includes(term)) {
+        console.log(`🎯 FONKSİYONEL GEREKSİNİMLER BAŞLIK BULUNDU: "${text}" (term: ${term})`);
+        return heading;
+      }
+    }
+  }
+  
+  // Başlık bulunamadı, tüm elementlerde ara
+  console.log('🔍 Başlıklarda bulunamadı, tüm elementlerde aranıyor...');
+  const allElements = doc.querySelectorAll('p, div, span, td, th');
+  
+  for (let i = 0; i < allElements.length; i++) {
+    const element = allElements[i];
+    const text = element.textContent?.trim() || '';
+    const normalized = normalizeText(text);
+    
+    for (const term of searchTerms) {
+      if (normalized.includes(term) && text.length < 100) { // Kısa başlık benzeri metinler
+        console.log(`🎯 FONKSİYONEL GEREKSİNİMLER ELEMENT BULUNDU: "${text}" (term: ${term})`);
+        return element;
+      }
+    }
+  }
+  
+  console.log('❌ FONKSİYONEL GEREKSİNİMLER başlığı bulunamadı');
+  return null;
+}
+
+// Başlık sonrası içeriği topla
+function extractContentAfterHeader(doc: Document, headerElement: Element): string {
+  console.log('📝 FONKSİYONEL GEREKSİNİMLER: Başlık altındaki içerik toplaniyor...');
+  
+  const content: string[] = [];
+  let currentElement = headerElement.nextElementSibling;
+  let elementCount = 0;
+  const maxElements = 20;
+  
+  console.log(`🎯 Başlangıç elementi: "${headerElement.textContent?.substring(0, 30)}..."`);
+  
+  while (currentElement && elementCount < maxElements) {
+    const tagName = currentElement.tagName.toLowerCase();
+    const text = currentElement.textContent?.trim() || '';
+    
+    console.log(`🔍 Element ${elementCount + 1}: [${tagName}] "${text.substring(0, 50)}..."`);
+    
+    // Yeni başlık bulundu, dur
+    if (['h1', 'h2', 'h3', 'h4'].includes(tagName) && text.length > 3) {
+      console.log(`🛑 Yeni başlık bulundu, durduruluyor: "${text}"`);
+      break;
+    }
+    
+    // Boş içerik atla (çok esnek uzunluk)
+    if (!text || text.length < 3) {
+      console.log(`⏭️ Çok kısa, atlandı: "${text}"`);
+      elementCount++;
+      currentElement = currentElement.nextElementSibling;
+      continue;
+    }
+    
+    // Tablo içeriği atla
+    if (tagName === 'table' || currentElement.querySelector('table')) {
+      console.log(`🚫 Tablo atlandı`);
+      elementCount++;
+      currentElement = currentElement.nextElementSibling;
+      continue;
+    }
+    
+    // İyi görünen içerik (çok esnek)
+    if (text.length >= 3) {
+      content.push(text);
+      console.log(`✅ İçerik eklendi (${text.length} kar): "${text.substring(0, 100)}..."`);
+      
+      // İlk 5 paragrafı bulduktan sonra dur (daha fazla içerik topla)
+      if (content.length >= 5) {
+        console.log('🎯 5 paragraf bulundu, yeterli');
+        break;
+      }
+    } else {
+      console.log(`🤔 Çok kısa ama kayıt altında: "${text}"`);
+    }
+    
+    elementCount++;
+    currentElement = currentElement.nextElementSibling;
+  }
+  
+  const result = content.join('\n\n');
+  console.log(`✅ FONKSİYONEL GEREKSİNİMLER SONUÇ: ${content.length} paragraf, ${result.length} karakter`);
+  return result;
+}
+
+// SCAN mode: Dokümanı tara ve skorla
+function scanForFonksiyonelGereksinimlerContent(doc: Document): string {
+  console.log('🔍 SCAN Mode: Fonksiyonel Gereksinimler içeriği aranıyor...');
+  
+  const keywords = ['fonksiyonel', 'gereksinim', 'functional', 'requirement', 'islevsel', 'ozellik', 'feature'];
+  const blacklistKeywords = [
+    'içindekiler', 'contents', 'table', 'tablo', 'page', 'sayfa',
+    'başlık', 'title', 'index', 'menu', 'bölüm', 'section'
+  ];
+  
+  const allElements = doc.querySelectorAll('p, div, span');
+  const candidates: { element: Element; score: number; content: string }[] = [];
+  
+  for (let i = 0; i < allElements.length; i++) {
+    const element = allElements[i];
+    const text = element.textContent?.trim() || '';
+    const normalized = normalizeText(text);
+    
+    // Çok kısa veya blacklist kontrolü
+    if (text.length < 30) continue;
+    
+    let isBlacklisted = false;
+    for (const blackword of blacklistKeywords) {
+      if (normalized.includes(blackword)) {
+        isBlacklisted = true;
+        break;
+      }
+    }
+    if (isBlacklisted) continue;
+    
+    // Sadece sayı/noktalama işareti olanlar atla
+    if (/^[\d.\s)-]+$/.test(text)) continue;
+    
+    // Tablo içeriği atla
+    if (element.closest('table')) continue;
+    
+    // Skorlama
+    let score = 0;
+    
+    // Keyword puanları
+    for (const keyword of keywords) {
+      const count = (normalized.match(new RegExp(keyword, 'g')) || []).length;
+      score += count * 10;
+    }
+    
+    // Uzunluk puanı (daha uzun metinler tercih edilir)
+    score += Math.min(text.length / 10, 50);
+    
+    if (score > 10) {
+      candidates.push({ element, score, content: text });
+    }
+  }
+  
+  // En yüksek skorlu adayları al
+  candidates.sort((a, b) => b.score - a.score);
+  
+  console.log(`📊 ${candidates.length} aday bulundu`);
+  for (let i = 0; i < Math.min(3, candidates.length); i++) {
+    const candidate = candidates[i];
+    console.log(`🏆 Aday ${i + 1}: Skor ${candidate.score}, "${candidate.content.substring(0, 100)}..."`);
+  }
+  
+  if (candidates.length > 0) {
+    const topCandidates = candidates.slice(0, 3);
+    const result = topCandidates.map(c => c.content).join('\n\n');
+    console.log(`✅ SCAN mode sonuç: ${result.length} karakter`);
+    return result;
+  }
+  
+  console.log('❌ SCAN mode\'da uygun içerik bulunamadı');
+  return '';
+}
+
+// Ana parse fonksiyonu
+export async function parseFonksiyonelGereksinimlerFromDocx(file: File): Promise<FonksiyonelGereksinimlerParseResult> {
+  console.log('🔍 DOCX Fonksiyonel Gereksinimler Parse Başlıyor:', file.name);
+  
+  try {
+    console.log(`📄 Dosya okunuyor: ${file.name} (${file.size} bytes)`);
+    
+    // Dosyayı klonla
+    const arrayBuffer = await file.arrayBuffer();
+    const clonedBuffer = arrayBuffer.slice(0);
+    const result = await mammoth.convertToHtml({ arrayBuffer: clonedBuffer });
+    
+    console.log(`📄 HTML Dönüştürme Tamamlandı, uzunluk: ${result.value.length}`);
+    
+    if (result.messages && result.messages.length > 0) {
+      console.log('⚠️ Mammoth uyarıları:', result.messages);
+    }
+    
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(result.value, 'text/html');
+    
+    console.log('🎯 STRICT Mode: Başlık arıyor...');
+    
+    // STRICT Mode: Başlık bul
+    const headerElement = findFonksiyonelGereksinimlerHeader(doc);
+    
+    if (headerElement) {
+      const content = extractContentAfterHeader(doc, headerElement);
+      
+      if (content && content.trim().length > 0) {
+        console.log('📊 Fonksiyonel Gereksinimler Parse Sonucu:', {
+          found: true,
+          mode: 'strict',
+          contentLength: content.length,
+          matchedLabels: ['Fonksiyonel Gereksinimler'],
+          errors: [],
+          warnings: []
+        });
+        
+        return {
+          found: true,
+          mode: 'strict',
+          content: content.trim(),
+          contentLength: content.length,
+          matchedLabels: ['Fonksiyonel Gereksinimler'],
+          errors: [],
+          warnings: []
+        };
+      }
+    }
+    
+    // SCAN Mode: Dokümanı tara
+    console.log('🔍 SCAN Mode: Alternatif arama başlıyor...');
+    const scanContent = scanForFonksiyonelGereksinimlerContent(doc);
+    
+    if (scanContent && scanContent.trim().length > 0) {
+      console.log('📊 Fonksiyonel Gereksinimler Parse Sonucu (SCAN):', {
+        found: true,
+        mode: 'scan',
+        contentLength: scanContent.length,
+        matchedLabels: ['Content Found via Scan'],
+        errors: [],
+        warnings: ['İçerik alternatif yöntemle bulundu']
+      });
+      
+      return {
+        found: true,
+        mode: 'scan',
+        content: scanContent.trim(),
+        contentLength: scanContent.length,
+        matchedLabels: ['Content Found via Scan'],
+        errors: [],
+        warnings: ['İçerik alternatif yöntemle bulundu']
+      };
+    }
+    
+    // Hiçbir şey bulunamadı
+    return {
+      found: false,
+      mode: 'strict',
+      content: '',
+      contentLength: 0,
+      matchedLabels: [],
+      errors: ['Fonksiyonel Gereksinimler içeriği bulunamadı'],
+      warnings: []
+    };
+    
+  } catch (error) {
+    console.error('❌ Parse hatası:', error);
+    return {
+      found: false,
+      mode: 'strict',
+      content: '',
+      contentLength: 0,
+      matchedLabels: [],
+      errors: [`Parse hatası: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`],
+      warnings: []
+    };
+  }
+}

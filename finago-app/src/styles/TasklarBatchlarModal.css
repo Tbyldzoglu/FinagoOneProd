@@ -1,0 +1,643 @@
+/**
+ * Tasklar/Batchlar Modal Styles
+ */
+
+/* Validation Banner Styles */
+.validation-banner {
+  background: linear-gradient(135deg, #fffacd, #ffeaa7);
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 10px 0;
+  font-size: 13px;
+  line-height: 1.4;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.validation-errors {
+  margin-bottom: 8px;
+}
+
+.validation-errors strong {
+  color: #d63031;
+  font-weight: 600;
+}
+
+.validation-warnings strong {
+  color: #f39c12;
+  font-weight: 600;
+}
+
+.validation-banner ul {
+  margin: 6px 0 0 16px;
+  padding: 0;
+  list-style-type: disc;
+}
+
+.validation-banner li {
+  margin: 2px 0;
+  color: #333;
+}
+
+.validation-errors li {
+  color: #d63031;
+}
+
+.validation-warnings li {
+  color: #e17055;
+}
+
+/* Modal Overlay & Container */
+.tasklar-batchlar-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 999999 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tasklar-batchlar-container {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  max-height: none !important;
+  background: var(--bg-primary, #1a1a1a);
+  backdrop-filter: none;
+  box-shadow: inset 0 0 0 1px var(--border-primary);
+  display: flex;
+  flex-direction: column;
+  margin: 0 !important;
+  padding: 0 !important;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+/**
+ * Modal Header
+ */
+.tasklar-batchlar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm);
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--card-gradient, #2a2a2a);
+  backdrop-filter: none;
+  flex-shrink: 0;
+}
+
+/**
+ * Modal Content - Split Layout
+ */
+.tasklar-batchlar-content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 60% 40%;
+  overflow: hidden;
+  height: calc(100vh - 120px);
+  padding-top: 0;
+}
+
+/**
+ * Table Form Panel (Sol Taraf)
+ */
+.table-form-panel {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-primary);
+  background: var(--bg-secondary, #2d2d2d);
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-xs);
+  border-bottom: 1px solid var(--border-secondary);
+  background: var(--bg-tertiary, #3a3a3a);
+  flex-shrink: 0;
+  margin-bottom: var(--spacing-xs);
+  position: relative;
+  z-index: 5;
+  margin-top: 0;
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.panel-title svg {
+  color: var(--ai-primary);
+}
+
+.panel-title span {
+  font-weight: 600;
+  color: var(--text-primary, #ffffff);
+  font-size: 12px;
+}
+
+.panel-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.level-indicator {
+  background: var(--purple-primary, #8b5cf6);
+  color: white;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.edit-button {
+  background: var(--ai-primary);
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.edit-button:hover {
+  background: var(--ai-secondary);
+  transform: translateY(-1px);
+}
+
+.tasklar-batchlar-modal .table-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  padding: var(--spacing-xs);
+  background: var(--bg-secondary, #2d2d2d);
+  height: calc(100vh - 180px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  max-height: calc(100vh - 180px);
+  margin-top: 0;
+  position: relative;
+}
+
+.table-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: var(--border-primary);
+}
+
+/**
+ * Table Section
+ */
+.tasklar-batchlar-modal .table-section {
+  margin-bottom: 0;
+  background: var(--bg-tertiary, #3a3a3a);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 250px;
+  max-height: 100%;
+}
+
+.tasklar-batchlar-modal .table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-xs);
+  background: var(--bg-quaternary, #4a4a4a);
+  border-bottom: 1px solid var(--border-secondary);
+  flex-shrink: 0;
+  height: 32px;
+}
+
+.tasklar-batchlar-modal .table-header h3 {
+  margin: 0;
+  color: var(--text-primary, #ffffff);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.add-row-btn {
+  background: var(--ai-primary);
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.add-row-btn:hover {
+  background: var(--ai-secondary);
+  transform: translateY(-1px);
+}
+
+.tasklar-batchlar-modal .table-wrapper {
+  overflow: auto;
+  flex: 1;
+  min-height: 200px;
+  border: 1px solid var(--border-secondary);
+  background: var(--bg-secondary, #2d2d2d);
+}
+
+.tasklar-batchlar-modal .table-wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.tasklar-batchlar-modal .table-wrapper::-webkit-scrollbar-track {
+  background: var(--bg-primary, #1a1a1a);
+  border-radius: 4px;
+}
+
+.tasklar-batchlar-modal .table-wrapper::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 4px;
+}
+
+.tasklar-batchlar-modal .table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--border-primary);
+}
+
+.tasklar-batchlar-modal .table-wrapper::-webkit-scrollbar-corner {
+  background: var(--bg-primary, #1a1a1a);
+}
+
+/**
+ * Tasklar Table
+ */
+.tasklar-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-secondary, #2d2d2d);
+  min-width: 800px;
+  font-size: 10px;
+  border: 1px solid var(--border-secondary);
+}
+
+.tasklar-table thead th {
+  padding: 6px 8px;
+  color: var(--text-primary, #ffffff);
+  font-weight: 600;
+  font-size: 9px;
+  border: 1px solid var(--border-secondary);
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bg-quaternary, #4a4a4a);
+  white-space: nowrap;
+  height: 32px;
+}
+
+.tasklar-table thead th:last-child {
+  border-right: none;
+}
+
+.tasklar-table tbody tr {
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.tasklar-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.tasklar-table tbody td {
+  padding: 4px 6px;
+  background: var(--bg-secondary, #2d2d2d);
+  vertical-align: middle;
+  border: 1px solid var(--border-secondary);
+  height: 28px;
+  color: var(--text-primary, #ffffff);
+}
+
+.tasklar-table tbody td:last-child {
+  border-right: none;
+}
+
+/**
+ * Table Inputs
+ */
+.table-input {
+  width: 100%;
+  padding: 3px 5px;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary, #1a1a1a);
+  color: var(--text-primary, #ffffff);
+  font-size: 9px;
+  font-family: inherit;
+  transition: all var(--transition-normal);
+  min-height: 20px;
+  min-width: 60px;
+}
+
+.table-input:focus {
+  outline: none;
+  border-color: var(--ai-primary);
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+  background: var(--bg-primary, #1a1a1a);
+}
+
+.table-input::placeholder {
+  color: var(--text-secondary, #888888);
+  font-size: 8px;
+}
+
+/**
+ * Delete Row Button
+ */
+.delete-row-btn {
+  background: var(--danger-primary, #dc3545);
+  color: white;
+  border: none;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 20px;
+}
+
+.delete-row-btn:hover {
+  background: var(--danger-hover, #c82333);
+  transform: scale(1.05);
+}
+
+/**
+ * Text Section
+ */
+.tasklar-batchlar-modal .text-section {
+  margin-bottom: 0;
+  background: var(--bg-tertiary, #3a3a3a);
+  border-radius: var(--radius-md);
+  overflow: visible;
+  box-shadow: var(--shadow-md);
+  flex: none;
+  height: 120px;
+  display: flex;
+  flex-direction: column;
+}
+
+.tasklar-batchlar-modal .text-header {
+  padding: var(--spacing-xs);
+  background: var(--bg-quaternary, #4a4a4a);
+  border-bottom: 1px solid var(--border-secondary);
+  flex-shrink: 0;
+  height: 32px;
+}
+
+.tasklar-batchlar-modal .text-header h3 {
+  margin: 0;
+  color: var(--text-primary, #ffffff);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tasklar-batchlar-modal .description-textarea {
+  width: 100%;
+  padding: var(--spacing-xs);
+  border: none;
+  background: var(--bg-secondary, #2d2d2d);
+  color: var(--text-primary, #ffffff);
+  font-size: 11px;
+  font-family: inherit;
+  resize: none;
+  height: 88px;
+  outline: none;
+  flex: 1;
+}
+
+.tasklar-batchlar-modal .description-textarea:focus {
+  background: var(--bg-primary, #1a1a1a);
+}
+
+/**
+ * Chat Panel (Sağ Taraf)
+ */
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary, #1a1a1a);
+  height: 100%;
+  overflow: hidden;
+  border-left: 1px solid var(--border-secondary);
+}
+
+.tasklar-chat {
+  border: none;
+  border-radius: 0;
+}
+
+/**
+ * Modal Footer
+ */
+.tasklar-batchlar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-xs);
+  border-top: 1px solid var(--border-primary);
+  background: var(--card-gradient, #2a2a2a);
+  backdrop-filter: none;
+  flex-shrink: 0;
+}
+
+.footer-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.last-saved {
+  color: var(--text-secondary, #cccccc);
+  font-size: 10px;
+}
+
+.footer-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.modal-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 6px 12px;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.modal-btn.secondary {
+  background: var(--bg-tertiary, #3a3a3a);
+  color: var(--text-primary, #ffffff);
+  border: 1px solid var(--border-secondary);
+}
+
+.modal-btn.secondary:hover {
+  background: var(--bg-quaternary, #4a4a4a);
+  transform: translateY(-1px);
+}
+
+.modal-btn.primary {
+  background: var(--ai-primary);
+  color: white;
+}
+
+.modal-btn.primary:hover {
+  background: var(--ai-secondary);
+  transform: translateY(-1px);
+}
+
+.modal-close-button {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #cccccc);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-normal);
+}
+
+.modal-close-button:hover {
+  color: var(--text-primary, #ffffff);
+  background: var(--bg-tertiary, #3a3a3a);
+}
+
+.modal-title {
+  margin: 0;
+  color: var(--text-primary, #ffffff);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.btn-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/**
+ * Animations
+ */
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/**
+ * Responsive Design
+ */
+@media (max-width: 1024px) {
+  .tasklar-batchlar-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+  
+  .table-form-panel {
+    border-right: none;
+    border-bottom: 1px solid var(--border-primary);
+  }
+  
+  .table-container {
+    max-height: calc(50vh - 100px);
+  }
+  
+  .tasklar-table {
+    min-width: 800px;
+  }
+  
+  .table-input {
+    min-width: 60px;
+  }
+}
+
+@media (max-width: 768px) {
+  .tasklar-batchlar-content {
+    grid-template-rows: 60% 40%;
+  }
+  
+  .tasklar-batchlar-header,
+  .tasklar-batchlar-footer {
+    padding: var(--spacing-md);
+  }
+  
+  .tasklar-batchlar-footer {
+    flex-direction: column-reverse;
+    gap: var(--spacing-md);
+    align-items: stretch;
+  }
+  
+  .footer-actions {
+    width: 100%;
+  }
+  
+  .modal-btn {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .table-container {
+    padding: var(--spacing-xs);
+  }
+  
+  .table-input {
+    padding: 3px 4px;
+    font-size: 9px;
+    min-height: 20px;
+  }
+  
+  .tasklar-table thead th {
+    font-size: 9px;
+    padding: var(--spacing-xs);
+  }
+}

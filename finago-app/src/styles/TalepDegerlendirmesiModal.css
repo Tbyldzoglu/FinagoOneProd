@@ -1,0 +1,496 @@
+/**
+ * Talep Değerlendirmesi Modal Styles
+ * Sol tarafta değerlendirme tablosu, sağ tarafta LLM chat
+ */
+
+.talep-degerlendirmesi-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 999999 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  animation: overlayFadeIn 0.3s ease-out;
+}
+
+.talep-degerlendirmesi-container {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  max-height: none !important;
+  background: var(--bg-primary, #1a1a1a);
+  backdrop-filter: none;
+  box-shadow: inset 0 0 0 1px var(--border-primary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 999999 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+/**
+ * Modal Header
+ */
+.talep-degerlendirmesi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--card-gradient, #2a2a2a);
+  backdrop-filter: none;
+  flex-shrink: 0;
+}
+
+/**
+ * Modal Content - Split Layout
+ */
+.talep-degerlendirmesi-content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 60% 40%;
+  overflow: hidden;
+  height: calc(100vh - 120px);
+}
+
+/**
+ * Evaluation Table Panel (Sol Taraf)
+ */
+.evaluation-table-panel {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-primary);
+  background: var(--bg-secondary, #2d2d2d);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm);
+  border-bottom: 1px solid var(--border-secondary);
+  background: var(--bg-tertiary, #3a3a3a);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-weight: 600;
+  color: var(--text-primary, #ffffff);
+  font-size: 12px;
+}
+
+.panel-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.completion-status {
+  font-size: 10px;
+  color: var(--text-tertiary, #888888);
+  background: var(--bg-primary, #1a1a1a);
+  padding: 3px 6px;
+  border-radius: var(--radius-md);
+}
+
+.evaluation-table-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  padding: var(--spacing-sm);
+  background: var(--bg-secondary, #2d2d2d);
+  max-height: calc(100vh - 200px);
+  min-height: 300px;
+}
+
+.evaluation-table-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.evaluation-table-container::-webkit-scrollbar-track {
+  background: var(--bg-primary, #1a1a1a);
+}
+
+.evaluation-table-container::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: var(--radius-full);
+}
+
+.evaluation-table-container::-webkit-scrollbar-thumb:hover {
+  background: var(--border-primary);
+}
+
+/**
+ * Evaluation Table - Tema Uyumlu (3 Sütun)
+ */
+.evaluation-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-secondary, #2d2d2d);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-lg);
+}
+
+.evaluation-table thead tr {
+  background: var(--bg-tertiary, #3a3a3a);
+}
+
+.evaluation-table thead th {
+  padding: var(--spacing-sm);
+  color: var(--text-primary, #ffffff);
+  font-weight: 600;
+  font-size: 11px;
+  border-right: 1px solid var(--border-secondary);
+  text-align: left;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bg-tertiary, #3a3a3a);
+}
+
+.evaluation-table thead th:last-child {
+  border-right: none;
+}
+
+.question-header {
+  width: 40%;
+}
+
+.answer-header {
+  width: 25%;
+}
+
+.explanation-header {
+  width: 35%;
+}
+
+.evaluation-table tbody tr {
+  border-bottom: 1px solid var(--border-secondary);
+  transition: background-color var(--transition-normal);
+}
+
+.evaluation-table tbody tr:hover {
+  background: var(--hover-overlay, rgba(255, 255, 255, 0.05));
+}
+
+.evaluation-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.question-cell {
+  padding: var(--spacing-xs);
+  background: var(--bg-tertiary, #3a3a3a);
+  color: var(--text-primary, #ffffff);
+  font-weight: 500;
+  font-size: 11px;
+  border-right: 1px solid var(--border-secondary);
+  width: 40%;
+  vertical-align: middle;
+  text-align: left;
+}
+
+.answer-cell {
+  padding: var(--spacing-xs);
+  background: var(--bg-secondary, #2d2d2d);
+  width: 25%;
+  vertical-align: middle;
+  border-right: 1px solid var(--border-secondary);
+}
+
+.explanation-cell {
+  padding: var(--spacing-xs);
+  background: var(--bg-secondary, #2d2d2d);
+  width: 35%;
+  vertical-align: middle;
+}
+
+/* Tek sütun satırı (Ürün Adı için) */
+.single-column-row .question-cell {
+  width: 40%;
+}
+
+.single-answer-cell {
+  padding: var(--spacing-xs);
+  background: var(--bg-secondary, #2d2d2d);
+  width: 60%;
+  vertical-align: middle;
+}
+
+/**
+ * Form Controls - Tema Uyumlu
+ */
+.table-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary, #1a1a1a);
+  color: var(--text-primary, #ffffff);
+  font-size: 11px;
+  font-family: inherit;
+  transition: all var(--transition-normal);
+  min-height: 28px;
+}
+
+.table-input:focus {
+  outline: none;
+  border-color: var(--ai-primary);
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+  background: var(--bg-secondary, #2d2d2d);
+}
+
+.table-input::placeholder {
+  color: var(--text-tertiary, #888888);
+}
+
+/**
+ * Chat Panel (Sağ Taraf)
+ */
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary, #1a1a1a);
+  height: calc(100vh - 120px);
+  overflow: hidden;
+}
+
+.talep-chat {
+  border: none;
+  border-radius: 0;
+  height: 100%;
+}
+
+/**
+ * Modal Footer
+ */
+.talep-degerlendirmesi-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm);
+  border-top: 1px solid var(--border-primary);
+  background: var(--card-gradient, #2a2a2a);
+  backdrop-filter: none;
+  flex-shrink: 0;
+}
+
+.footer-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.last-saved {
+  font-size: 11px;
+  color: var(--text-tertiary, #888888);
+}
+
+.footer-actions {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+/**
+ * Animations
+ */
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/**
+ * Responsive Design
+ */
+@media (max-width: 1024px) {
+  .talep-degerlendirmesi-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+    height: calc(100vh - 100px);
+  }
+  
+  .evaluation-table-panel {
+    border-right: none;
+    border-bottom: 1px solid var(--border-primary);
+  }
+  
+  .talep-degerlendirmesi-header,
+  .talep-degerlendirmesi-footer {
+    padding: var(--spacing-sm);
+  }
+  
+  .panel-header {
+    padding: var(--spacing-xs);
+  }
+  
+  .evaluation-table-container {
+    padding: var(--spacing-xs);
+    max-height: calc(50vh - 80px);
+  }
+  
+  .question-cell,
+  .answer-cell,
+  .explanation-cell {
+    padding: var(--spacing-xs);
+  }
+  
+  .question-cell {
+    font-size: 11px;
+    width: 35%;
+  }
+  
+  .answer-cell {
+    width: 30%;
+  }
+  
+  .explanation-cell {
+    width: 35%;
+  }
+  
+  .table-input {
+    padding: 6px 8px;
+    font-size: 11px;
+    min-height: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  .talep-degerlendirmesi-content {
+    grid-template-rows: 60% 40%;
+  }
+  
+  .talep-degerlendirmesi-header,
+  .talep-degerlendirmesi-footer {
+    padding: var(--spacing-md);
+  }
+  
+  .talep-degerlendirmesi-footer {
+    flex-direction: column-reverse;
+    gap: var(--spacing-md);
+    align-items: stretch;
+  }
+  
+  .footer-actions {
+    width: 100%;
+  }
+  
+  .modal-btn {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .panel-header {
+    padding: var(--spacing-sm);
+  }
+  
+  .panel-title {
+    font-size: var(--font-sm);
+  }
+  
+  .evaluation-table-container {
+    padding: var(--spacing-sm);
+  }
+  
+  .evaluation-table {
+    font-size: 12px;
+  }
+  
+  .question-cell {
+    width: 45%;
+    font-size: 11px;
+    padding: var(--spacing-xs);
+  }
+  
+  .answer-cell {
+    width: 55%;
+    padding: var(--spacing-xs);
+  }
+  
+  .table-input,
+  .table-select {
+    padding: 6px 8px;
+    font-size: 12px;
+    min-height: 30px;
+  }
+}
+
+@media (max-width: 480px) {
+  .talep-degerlendirmesi-header {
+    padding: var(--spacing-sm);
+  }
+  
+  .modal-title {
+    font-size: var(--font-lg);
+  }
+  
+  .modal-subtitle {
+    font-size: var(--font-xs);
+  }
+  
+  .talep-degerlendirmesi-content {
+    grid-template-rows: 50% 50%;
+  }
+  
+  .evaluation-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .evaluation-table tbody,
+  .evaluation-table tr,
+  .evaluation-table td {
+    display: block;
+  }
+  
+  .evaluation-table tr {
+    border: 1px solid var(--border-secondary);
+    margin-bottom: var(--spacing-sm);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm);
+  }
+  
+  .question-cell {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-secondary);
+    margin-bottom: var(--spacing-xs);
+    font-weight: 600;
+  }
+  
+  .answer-cell {
+    width: 100%;
+  }
+}

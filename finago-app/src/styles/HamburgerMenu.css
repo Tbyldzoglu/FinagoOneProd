@@ -1,0 +1,305 @@
+/**
+ * Hamburger Menu Stilleri
+ * Modern animasyonlu hamburger butonu
+ */
+
+.hamburger-menu {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  background: var(--card-gradient);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.hamburger-menu:hover {
+  background: var(--hover-overlay);
+  border-color: var(--ai-primary);
+  transform: scale(1.05);
+  box-shadow: var(--shadow-md);
+}
+
+.hamburger-menu:active {
+  transform: scale(0.95);
+}
+
+.hamburger-menu:focus {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/**
+ * Hamburger Lines Container
+ */
+.hamburger-lines {
+  position: relative;
+  width: 16px;
+  height: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/**
+ * Individual Lines
+ */
+.line {
+  width: 100%;
+  height: 2px;
+  background: var(--text-primary);
+  border-radius: 2px;
+  transition: all var(--transition-bounce);
+  transform-origin: center;
+  position: relative;
+}
+
+/* Default state */
+.line1 {
+  transform: translateY(0) rotate(0deg);
+}
+
+.line2 {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.line3 {
+  transform: translateY(0) rotate(0deg);
+}
+
+/* Open state - X formation */
+.hamburger-menu.open .line1 {
+  transform: translateY(7px) rotate(45deg);
+  background: var(--ai-primary);
+}
+
+.hamburger-menu.open .line2 {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.hamburger-menu.open .line3 {
+  transform: translateY(-7px) rotate(-45deg);
+  background: var(--ai-primary);
+}
+
+/**
+ * Ripple Effect
+ */
+.hamburger-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: radial-gradient(circle, var(--ai-primary) 0%, transparent 70%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: all var(--transition-fast);
+  pointer-events: none;
+}
+
+.hamburger-menu:active .hamburger-ripple {
+  width: 60px;
+  height: 60px;
+  opacity: 0.3;
+}
+
+/**
+ * Tooltip
+ */
+.hamburger-tooltip {
+  position: absolute;
+  bottom: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--primary-bg);
+  color: var(--text-primary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-normal);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-sm);
+  z-index: 1300;
+}
+
+.hamburger-tooltip::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 4px solid var(--border-primary);
+}
+
+.hamburger-tooltip::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 4px solid var(--primary-bg);
+}
+
+.hamburger-menu:hover .hamburger-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-2px);
+}
+
+/**
+ * Responsive Behavior
+ */
+
+/* Desktop - sadece hover'da görünür */
+@media (min-width: 1024px) {
+  .hamburger-menu {
+    opacity: 0.7;
+  }
+  
+  .hamburger-menu:hover {
+    opacity: 1;
+  }
+}
+
+/* Sidebar içinde küçük boyut */
+.sidebar-controls .hamburger-menu {
+  width: 28px;
+  height: 28px;
+  opacity: 1;
+}
+
+.sidebar-controls .hamburger-lines {
+  width: 12px;
+  height: 9px;
+}
+
+.sidebar-controls .hamburger-menu.open .line1 {
+  transform: translateY(4.5px) rotate(45deg);
+}
+
+.sidebar-controls .hamburger-menu.open .line3 {
+  transform: translateY(-4.5px) rotate(-45deg);
+}
+
+/* Tablet ve Mobile - her zaman görünür */
+@media (max-width: 1023px) {
+  .hamburger-menu {
+    opacity: 1;
+    width: 32px;
+    height: 32px;
+  }
+  
+  .hamburger-lines {
+    width: 14px;
+    height: 10px;
+  }
+  
+  .sidebar-controls .hamburger-menu {
+    width: 26px;
+    height: 26px;
+  }
+  
+  .sidebar-controls .hamburger-lines {
+    width: 11px;
+    height: 8px;
+  }
+  
+  .hamburger-tooltip {
+    display: none; /* Mobilde tooltip gizle */
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .hamburger-menu {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .hamburger-lines {
+    width: 12px;
+    height: 9px;
+  }
+  
+  .hamburger-menu.open .line1 {
+    transform: translateY(4.5px) rotate(45deg);
+  }
+  
+  .hamburger-menu.open .line3 {
+    transform: translateY(-4.5px) rotate(-45deg);
+  }
+}
+
+/**
+ * Accessibility - Reduced Motion
+ */
+@media (prefers-reduced-motion: reduce) {
+  .hamburger-menu,
+  .line,
+  .hamburger-ripple,
+  .hamburger-tooltip {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/**
+ * High Contrast Mode
+ */
+@media (prefers-contrast: high) {
+  .hamburger-menu {
+    border-width: 2px;
+  }
+  
+  .line {
+    height: 3px;
+    background: currentColor;
+  }
+}
+
+/**
+ * Focus States for Keyboard Navigation
+ */
+.hamburger-menu:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+/**
+ * Animation Keyframes
+ */
+@keyframes hamburger-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px var(--ai-primary);
+  }
+  50% {
+    box-shadow: 0 0 15px var(--ai-primary);
+  }
+}
+
+.hamburger-menu.open {
+  animation: hamburger-glow 2s ease-in-out infinite;
+}

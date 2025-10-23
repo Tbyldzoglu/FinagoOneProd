@@ -1,0 +1,890 @@
+/**
+ * Sidebar Ana Container Stilleri
+ * AI uygulamaları için modern responsive tasarım
+ */
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 210px;
+  background: var(--sidebar-gradient);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+  border-right: 1px solid var(--border-secondary);
+  transform: translateX(0);
+  will-change: transform;
+}
+
+/* Collapsed state */
+.sidebar.collapsed {
+  transform: translateX(-100%);
+}
+
+/* Desktop'ta sidebar collapse davranışı */
+@media (min-width: 1024px) {
+  .sidebar.collapsed {
+    transform: translateX(-100%);
+    box-shadow: none;
+  }
+  
+  .sidebar:not(.collapsed) {
+    transform: translateX(0);
+    box-shadow: var(--shadow-xl);
+  }
+}
+
+/* Overlay for mobile */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-bounce);
+  display: none;
+}
+
+.sidebar-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Desktop'ta overlay gizle */
+@media (min-width: 1024px) {
+  .sidebar-overlay {
+    display: none !important;
+  }
+}
+
+/* Mobile'da overlay göster */
+@media (max-width: 1023px) {
+  .sidebar-overlay {
+    display: block;
+  }
+}
+
+/**
+ * Sidebar Başlık Alanı Stilleri
+ * Logo ve uygulama başlığı için AI tarzı stil tanımları
+ */
+.sidebar-header {
+  padding: 0.375rem;
+  border-bottom: 1px solid var(--border-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  height: 60px;
+}
+
+.sidebar-logo {
+  width: 165px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+
+.sidebar-title {
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.sidebar-subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 8px;
+  font-weight: 500;
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/**
+ * Arama Çubuğu Stilleri
+ * AI destekli hızlı arama özelliği için stil tanımları
+ */
+.sidebar-search {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.sidebar-search-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) 30px;
+  color: white;
+  font-size: 11px;
+  font-weight: 500;
+  outline: none;
+  transition: all var(--transition-normal);
+  position: relative;
+  backdrop-filter: blur(10px);
+}
+
+.sidebar-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 400;
+}
+
+.sidebar-search-input:focus {
+  border-color: var(--ai-primary);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.sidebar-search-container {
+  position: relative;
+}
+
+.sidebar-search-icon {
+  position: absolute;
+  left: var(--spacing-md);
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  transition: color var(--transition-normal);
+}
+
+.sidebar-search-input:focus + .sidebar-search-icon {
+  color: var(--ai-primary);
+}
+
+.sidebar-search-shortcut {
+  position: absolute;
+  right: var(--spacing-md);
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  font-size: 8px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+}
+
+/**
+ * Sidebar Controls Alanı
+ * Profesyonel kontrol paneli tasarımı
+ */
+.sidebar-controls {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-secondary);
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.08) 0%, 
+    rgba(255, 255, 255, 0.03) 100%);
+  backdrop-filter: blur(10px);
+  position: relative;
+}
+
+.sidebar-controls::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    var(--ai-primary) 50%, 
+    transparent 100%);
+  opacity: 0.3;
+}
+
+.sidebar-controls-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.sidebar-controls-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex: 1;
+}
+
+.sidebar-controls-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.controls-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.controls-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 7px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  line-height: 1;
+}
+
+.controls-value {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 8px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* Control groups */
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-normal);
+  position: relative;
+}
+
+.control-group:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.control-group::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 1px;
+  background: var(--ai-primary);
+  transition: width var(--transition-normal);
+}
+
+.control-group:hover::after {
+  width: 80%;
+}
+
+/* Status indicators */
+.status-indicator {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ai-success);
+  box-shadow: 0 0 6px var(--ai-success);
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+@keyframes status-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+/**
+ * Menü Navigasyon Stilleri
+ * AI uygulamaları için modern menü sistem
+ */
+.sidebar-nav {
+  flex: 1;
+  padding: var(--spacing-lg) 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 5px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-normal);
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/**
+ * Menü Grup Başlıkları
+ * AI kategorileri için modern stil tanımları
+ */
+.sidebar-menu-group {
+  margin-bottom: var(--spacing-xl);
+}
+
+.sidebar-menu-title {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 0 var(--spacing-lg) var(--spacing-sm) var(--spacing-lg);
+  margin-bottom: var(--spacing-sm);
+  position: relative;
+}
+
+.sidebar-menu-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: var(--spacing-lg);
+  width: 15px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--ai-primary), transparent);
+}
+
+/**
+ * Menü Öğeleri Stilleri
+ * AI uygulamaları için modern interaktif menü öğeleri
+ */
+.sidebar-menu-item {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: all var(--transition-normal);
+  cursor: pointer;
+  position: relative;
+  margin: var(--spacing-xs) var(--spacing-xs);
+  border-radius: var(--radius-lg);
+  border: 1px solid transparent;
+}
+
+.sidebar-menu-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  transform: translateX(6px) scale(1.02);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-md);
+}
+
+.sidebar-menu-item.active {
+  background: linear-gradient(135deg, var(--ai-primary), var(--ai-secondary));
+  color: white;
+  transform: translateX(4px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.sidebar-menu-item.active::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 60%;
+  width: 4px;
+  background: var(--ai-primary);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  box-shadow: 0 0 10px var(--ai-primary);
+}
+
+/**
+ * Menü İkonları
+ * AI uygulamaları için modern ikon stilleri
+ */
+.sidebar-menu-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: all var(--transition-normal);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.sidebar-menu-item:hover .sidebar-menu-icon {
+  transform: scale(1.1);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+.sidebar-menu-text {
+  flex: 1;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/**
+ * Menü Etiketleri (Badges)
+ * AI uygulamaları için modern etiket sistemi
+ */
+.sidebar-menu-badge {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-xl);
+  font-size: 7px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-left: var(--spacing-sm);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-sm);
+}
+
+.sidebar-menu-badge.pro {
+  background: linear-gradient(135deg, var(--ai-accent) 0%, #d97706 100%);
+  color: white;
+  animation: glow-orange 2s ease-in-out infinite alternate;
+}
+
+.sidebar-menu-badge.ai {
+  background: linear-gradient(135deg, var(--ai-success) 0%, #059669 100%);
+  color: white;
+  animation: glow-green 2s ease-in-out infinite alternate;
+}
+
+.sidebar-menu-badge.new {
+  background: linear-gradient(135deg, var(--ai-error) 0%, #dc2626 100%);
+  color: white;
+  animation: glow-red 2s ease-in-out infinite alternate;
+}
+
+.sidebar-menu-badge.beta {
+  background: linear-gradient(135deg, var(--ai-secondary) 0%, #7c3aed 100%);
+  color: white;
+  animation: glow-purple 2s ease-in-out infinite alternate;
+}
+
+/* Badge glow animasyonları */
+@keyframes glow-orange {
+  0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.5); }
+  100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.8); }
+}
+
+@keyframes glow-green {
+  0% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.5); }
+  100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.8); }
+}
+
+@keyframes glow-red {
+  0% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.5); }
+  100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.8); }
+}
+
+@keyframes glow-purple {
+  0% { box-shadow: 0 0 5px rgba(139, 92, 246, 0.5); }
+  100% { box-shadow: 0 0 15px rgba(139, 92, 246, 0.8); }
+}
+
+/**
+ * Alt Menü Stilleri
+ * Genişletilebilir alt menü öğeleri için stil tanımları
+ */
+.sidebar-submenu {
+  margin-left: 24px;
+  margin-top: 3px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.sidebar-submenu-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 15px 6px 0;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border-radius: 5px;
+  margin: 2px 0;
+  font-size: 10px;
+}
+
+.sidebar-submenu-item:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateX(3px);
+}
+
+.sidebar-submenu-item.active {
+  color: #6366f1;
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.sidebar-submenu-icon {
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  margin-right: 9px;
+  flex-shrink: 0;
+}
+
+.sidebar-submenu-item.active .sidebar-submenu-icon {
+  background: #6366f1;
+}
+
+/**
+ * Genişletme/Daraltma Okları
+ * Alt menü varlığını gösteren ok ikonları için stil tanımları
+ */
+.sidebar-menu-arrow {
+  margin-left: auto;
+  font-size: 9px;
+  transition: transform 0.2s ease;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.sidebar-menu-arrow.expanded {
+  transform: rotate(90deg);
+}
+
+/**
+ * Kullanıcı Profil Alanı Stilleri
+ * AI uygulamaları için modern kullanıcı arayüzü
+ */
+.sidebar-footer {
+  border-top: 1px solid var(--border-secondary);
+  padding: var(--spacing-sm);
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-user-profile {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  flex: 1;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.03);
+  height: 33px;
+}
+
+.sidebar-user-profile:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.sidebar-user-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--ai-primary) 0%, var(--ai-secondary) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 11px;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-normal);
+}
+
+.sidebar-user-profile:hover .sidebar-user-avatar {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-lg);
+}
+
+.sidebar-user-avatar::after {
+  content: '';
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 8px;
+  height: 8px;
+  background: var(--ai-success);
+  border: 2px solid white;
+  border-radius: 50%;
+  animation: pulse-online 2s ease-in-out infinite;
+}
+
+@keyframes pulse-online {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.sidebar-user-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.sidebar-user-name {
+  color: white;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-user-email {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 8px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-user-status {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 8px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.sidebar-user-status::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  background: #10b981;
+  border-radius: 50%;
+}
+
+/**
+ * Güvenli Çıkış Butonu Stilleri
+ * Alt kısımda bulunan çıkış butonu için stil tanımları
+ */
+.sidebar-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  width: 33px;
+  height: 33px;
+  flex-shrink: 0;
+}
+
+.sidebar-logout:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.sidebar-logout-icon {
+  font-size: 15px;
+}
+
+/**
+ * Responsive Tasarım
+ * AI uygulamaları için tam responsive davranış
+ */
+
+/* Extra Large Monitors - 1600px+ */
+@media (min-width: 1600px) {
+  .sidebar {
+    width: 195px;
+  }
+  
+  .sidebar-header {
+    padding: var(--spacing-2xl) var(--spacing-xl);
+  }
+  
+  .sidebar-title {
+    font-size: 15px;
+  }
+  
+  .sidebar-logo {
+    width: 165px;
+    height: 45px;
+  }
+}
+
+/* Large Monitors - 1400px+ */
+@media (min-width: 1400px) and (max-width: 1599px) {
+  .sidebar {
+    width: 188px;
+  }
+  
+  .sidebar-header {
+    padding: var(--spacing-xl) var(--spacing-lg);
+  }
+}
+
+/* Standard Desktop - 1200px+ */
+@media (min-width: 1200px) and (max-width: 1399px) {
+  .sidebar {
+    width: 210px;
+  }
+}
+
+/* Laptop/Desktop - 1024px+ */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 165px;
+  }
+  
+  .sidebar-header {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+  
+  .sidebar-search {
+    padding: var(--spacing-md);
+  }
+  
+  .sidebar-menu-item {
+    margin: var(--spacing-xs) var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  
+  .sidebar-footer {
+    padding: var(--spacing-md);
+  }
+}
+
+/* Tablet and Mobile - 768px and below */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 210px;
+    transform: translateX(-100%);
+    z-index: 1100;
+  }
+  
+  .sidebar:not(.collapsed) {
+    transform: translateX(0);
+    box-shadow: var(--shadow-xl), 20px 0 40px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Mobile - 480px */
+@media (max-width: 480px) {
+  .sidebar {
+    width: 100%;
+    max-width: 210px;
+  }
+  
+  .sidebar-header {
+    padding: var(--spacing-md) var(--spacing-md);
+  }
+  
+  .sidebar-logo {
+    width: 165px;
+    height: 45px;
+  }
+  
+  .sidebar-title {
+    font-size: 12px;
+  }
+  
+  .sidebar-subtitle {
+    font-size: 8px;
+  }
+  
+  .sidebar-search-input {
+    padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) 27px;
+    font-size: 10px;
+  }
+  
+  .sidebar-menu-item {
+    padding: var(--spacing-sm);
+  }
+  
+  .sidebar-menu-text {
+    font-size: 10px;
+  }
+  
+  .sidebar-user-avatar {
+    width: 27px;
+    height: 27px;
+    font-size: 11px;
+  }
+}
+
+/**
+ * Hover Efektleri ve Animasyonlar
+ * Etkileşim deneyimini artıran animasyon tanımları
+ */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.sidebar-menu-item {
+  animation: slideIn 0.3s ease;
+}
+
+.sidebar-submenu {
+  animation: slideIn 0.2s ease;
+}
+
+/**
+ * Focus Stilleri
+ * Klavye navigasyonu için erişilebilirlik stilleri
+ */
+.sidebar-menu-item:focus,
+.sidebar-submenu-item:focus {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+.sidebar-search-input:focus {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+/**
+ * Geçiş Efektleri
+ * Yumuşak geçişler için animasyon tanımları
+ */
+* {
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}

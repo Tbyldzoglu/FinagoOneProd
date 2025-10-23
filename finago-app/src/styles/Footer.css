@@ -1,0 +1,159 @@
+/**
+ * Footer Component Styles
+ * Reusable footer component with theme support
+ */
+
+.app-footer {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-top: 1px solid var(--border-primary);
+  overflow: hidden;
+  width: 100%;
+}
+
+.footer-content {
+  padding: 12px var(--spacing-xl);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
+  min-height: 45px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/**
+ * Footer Left Section
+ */
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.version-info {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.footer-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: var(--ai-gradient);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/**
+ * Footer Right Section
+ */
+.footer-right {
+  display: flex;
+  gap: 6px;
+}
+
+.tag {
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  line-height: 1.2;
+  border: 1px solid transparent;
+}
+
+.tag.enterprise {
+  background: rgba(180, 83, 9, 0.15);
+  color: #B45309;
+  border-color: rgba(180, 83, 9, 0.25);
+}
+
+.tag.ai-powered {
+  background: var(--ai-secondary);
+  color: var(--ai-primary);
+  border-color: var(--ai-primary);
+}
+
+.tag.secure {
+  background: var(--success-secondary);
+  color: var(--success-color);
+  border-color: var(--success-color);
+}
+
+/**
+ * Dark Theme Adjustments
+ */
+[data-theme="dark"] .tag.enterprise {
+  background: rgba(217, 119, 6, 0.2);
+  color: #F59E0B;
+  border-color: rgba(217, 119, 6, 0.3);
+}
+
+/**
+ * Responsive Design
+ */
+@media (max-width: 1024px) {
+  .footer-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+    padding: 10px var(--spacing-lg);
+  }
+  
+  .footer-left {
+    order: 2;
+  }
+  
+  .footer-right {
+    order: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .footer-content {
+    padding: 8px var(--spacing-md);
+  }
+  
+  .footer-right {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .tag {
+    font-size: 8px;
+    padding: 1px 4px;
+  }
+}
+
+/**
+ * Full Width Footer for specific pages
+ */
+.app-footer.full-width {
+  margin-top: var(--spacing-xl);
+  margin-left: calc(-1 * var(--spacing-xl));
+  margin-right: calc(-1 * var(--spacing-xl));
+  width: calc(100% + 2 * var(--spacing-xl));
+}
+
+/* Responsive full width adjustments */
+@media (max-width: 1024px) {
+  .app-footer.full-width {
+    margin-left: calc(-1 * var(--spacing-lg));
+    margin-right: calc(-1 * var(--spacing-lg));
+    width: calc(100% + 2 * var(--spacing-lg));
+  }
+}
+
+@media (max-width: 768px) {
+  .app-footer.full-width {
+    margin-left: calc(-1 * var(--spacing-md));
+    margin-right: calc(-1 * var(--spacing-md));
+    width: calc(100% + 2 * var(--spacing-md));
+  }
+}
