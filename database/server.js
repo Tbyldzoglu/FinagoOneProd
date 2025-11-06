@@ -1545,7 +1545,9 @@ app.get('/api/personel', authenticateToken, checkPermission('faz4'), async (req,
     const result = await request.query(query);
     
     // Sistem kurulum tarihi - Bu tarihten önce olması gereken raporlar "tamamlandı" sayılır
-    const SISTEM_KURULUM_TARIHI = new Date('2024-10-01');
+    // NOT: Bu tarih sistemin gerçekten kullanıma açıldığı tarih olmalı
+    // Bu tarihten ÖNCE işe başlayanların eski raporları otomatik "tamamlandı" sayılır
+    const SISTEM_KURULUM_TARIHI = new Date('2025-11-01'); // Sistemin aktif kullanıma geçtiği tarih
     
     // Her personel için rapor durumlarını kontrol et
     const personellerWithReports = await Promise.all(
