@@ -5,6 +5,7 @@
 const createReport = require('docx-templates').default;
 const fs = require('fs').promises;
 const path = require('path');
+const AdmZip = require('adm-zip');
 
 class WordExporter {
   constructor() {
@@ -12,6 +13,68 @@ class WordExporter {
     const wordexportDir = __dirname; // Bu dosyanın bulunduğu klasör (wordexport)
     this.templatePath = process.env.TEMPLATE_PATH || path.join(wordexportDir, 'templates');
     this.outputPath = process.env.OUTPUT_PATH || path.join(wordexportDir, 'output');
+  }
+
+  /**
+   * Export edilen DOCX'ten mammoth.js ile uyumsuz elementleri temizle
+   */
+  async cleanDocxForMammoth(docxPath) {
+    try {
+      console.log('🧹 Mammoth için DOCX temizleniyor:', docxPath);
+      
+      // DOCX'i ZIP olarak aç
+      const zip = new AdmZip(docxPath);
+      const zipEntries = zip.getEntries();
+      
+      // word/document.xml'i bul ve oku
+      const documentEntry = zipEntries.find(entry => entry.entryName === 'word/document.xml');
+      if (!documentEntry) {
+        console.warn('⚠️ word/document.xml bulunamadı, temizlik atlanıyor');
+        return;
+      }
+      
+      let documentXml = documentEntry.getData().toString('utf8');
+      const originalLength = documentXml.length;
+      
+      // Sorunlu elementleri temizle
+      // 1. Content Controls (w:sdt) - Mammoth'un okuyamadığı yapılar
+      documentXml = documentXml.replace(/<w:sdt\b[^>]*>[\s\S]*?<\/w:sdt>/g, (match) => {
+        // İçindeki metni koru, sadece control yapısını kaldır
+        const textMatch = match.match(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g);
+        return textMatch ? textMatch.join('') : '';
+      });
+      
+      // 2. Field Characters (w:fldChar) - Özel field yapıları
+      documentXml = documentXml.replace(/<w:fldChar\b[^>]*\/>/g, '');
+      
+      // 3. Field Simple (w:fldSimple) - Basit field'lar
+      documentXml = documentXml.replace(/<w:fldSimple\b[^>]*>[\s\S]*?<\/w:fldSimple>/g, (match) => {
+        const textMatch = match.match(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g);
+        return textMatch ? textMatch.join('') : '';
+      });
+      
+      // 4. Instrtext (w:instrText) - Field instruction text
+      documentXml = documentXml.replace(/<w:instrText[^>]*>[\s\S]*?<\/w:instrText>/g, '');
+      
+      // 5. BookmarkStart/End - Gereksiz bookmark'lar
+      documentXml = documentXml.replace(/<w:bookmarkStart[^>]*\/>/g, '');
+      documentXml = documentXml.replace(/<w:bookmarkEnd[^>]*\/>/g, '');
+      
+      const cleanedLength = documentXml.length;
+      console.log(`✂️ Temizleme tamamlandı: ${originalLength} → ${cleanedLength} bytes (${originalLength - cleanedLength} bytes temizlendi)`);
+      
+      // Temizlenmiş XML'i ZIP'e geri yaz
+      zip.updateFile('word/document.xml', Buffer.from(documentXml, 'utf8'));
+      
+      // Temizlenmiş DOCX'i kaydet
+      zip.writeZip(docxPath);
+      
+      console.log('✅ DOCX mammoth uyumlu hale getirildi');
+      
+    } catch (error) {
+      console.error('❌ DOCX temizleme hatası:', error.message);
+      // Hata olsa bile devam et, orijinal dosya korunsun
+    }
   }
 
   /**
@@ -103,6 +166,10 @@ class WordExporter {
       await fs.writeFile(outputPath, report);
       
       console.log(`✅ Word dokümanı oluşturuldu: ${outputPath}`);
+      
+      // Mammoth.js ile uyumlu hale getir
+      await this.cleanDocxForMammoth(outputPath);
+      
       return outputPath;
       
     } catch (error) {
