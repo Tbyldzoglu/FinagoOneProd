@@ -1574,8 +1574,6 @@ app.get('/api/personel', authenticateToken, checkPermission('faz4'), async (req,
           const ilkAyRaporTarihi = new Date(iseBaslamaTarihi);
           ilkAyRaporTarihi.setDate(ilkAyRaporTarihi.getDate() + 25);
           
-          console.log(`🔍 DEBUG - ${personel.ad} ${personel.soyad}: İlk Ay Rapor Tarihi: ${ilkAyRaporTarihi.toISOString()}, Sistem Kurulum: ${SISTEM_KURULUM_TARIHI.toISOString()}, Karşılaştırma: ${ilkAyRaporTarihi < SISTEM_KURULUM_TARIHI}`);
-          
           // Rapor tarihi sistem kurulumundan ÖNCE mi?
           if (ilkAyRaporTarihi < SISTEM_KURULUM_TARIHI) {
             // Sistem yokken olması gereken rapor - "tamamlandı" say
