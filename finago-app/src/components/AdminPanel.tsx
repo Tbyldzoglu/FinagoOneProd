@@ -8,6 +8,8 @@ import authService from '../services/authService';
 import { useTheme } from '../contexts/ThemeContext';
 import '../styles/AdminPanel.css';
 
+const API_BASE_URL = process.env.REACT_APP_DATABASE_API_URL || 'http://localhost:3001';
+
 interface User {
   id: number;
   username: string;
@@ -114,8 +116,8 @@ const AdminPanel: React.FC = () => {
       if (activeTab === 'users') {
         // Kullanıcıları ve atamaları yükle
         const [usersResponse, atamalarResponse] = await Promise.all([
-          fetch('http://localhost:3001/api/admin/users', { headers }),
-          fetch('http://localhost:3001/api/admin/yonetici-gruplari', { headers }),
+          fetch(`${API_BASE_URL}/api/admin/users`, { headers }),
+          fetch(`${API_BASE_URL}/api/admin/yonetici-gruplari`, { headers }),
         ]);
         
         if (!usersResponse.ok) throw new Error('Kullanıcılar yüklenemedi');
@@ -129,8 +131,8 @@ const AdminPanel: React.FC = () => {
       } else if (activeTab === 'permissions') {
         // Grupları ve atamaları yükle
         const [gruplanResponse, atamalarResponse] = await Promise.all([
-          fetch('http://localhost:3001/api/admin/gruplar', { headers }),
-          fetch('http://localhost:3001/api/admin/yonetici-gruplari', { headers }),
+          fetch(`${API_BASE_URL}/api/admin/gruplar`, { headers }),
+          fetch(`${API_BASE_URL}/api/admin/yonetici-gruplari`, { headers }),
         ]);
 
         if (!gruplanResponse.ok) throw new Error('Gruplar yüklenemedi');
@@ -143,7 +145,7 @@ const AdminPanel: React.FC = () => {
         setAtamalar(atamalarData.atamalar);
       } else if (activeTab === 'stats') {
         // İstatistikleri yükle
-        const statsResponse = await fetch('http://localhost:3001/api/admin/stats', {
+        const statsResponse = await fetch(`${API_BASE_URL}/api/admin/stats`, {
           headers,
         });
         if (!statsResponse.ok) throw new Error('İstatistikler yüklenemedi');
@@ -166,7 +168,7 @@ const AdminPanel: React.FC = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:3001/api/admin/users/${selectedUser.id}/yetki`,
+        `${API_BASE_URL}/api/admin/users/${selectedUser.id}/yetki`,
         {
           method: 'PUT',
           headers: {
@@ -202,7 +204,7 @@ const AdminPanel: React.FC = () => {
     setSuccess(null);
 
     try {
-      const response = await fetch('http://localhost:3001/api/admin/yonetici-gruplari', {
+      const response = await fetch(`${API_BASE_URL}/api/admin/yonetici-gruplari`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -241,7 +243,7 @@ const AdminPanel: React.FC = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:3001/api/admin/yonetici-gruplari/${atamaId}`,
+        `${API_BASE_URL}/api/admin/yonetici-gruplari/${atamaId}`,
         {
           method: 'DELETE',
           headers: {

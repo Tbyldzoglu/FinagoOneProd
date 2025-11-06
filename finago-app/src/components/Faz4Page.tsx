@@ -10,6 +10,8 @@ import React, { useState, useEffect } from 'react';
 import '../styles/Faz4Page.css';
 import authService from '../services/authService';
 
+const API_BASE_URL = process.env.REACT_APP_DATABASE_API_URL || 'http://localhost:3001';
+
 interface Personel {
   id: number;
   ad: string;
@@ -310,7 +312,7 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
         return;
       }
 
-      const response = await fetch('http://localhost:3001/api/rapor-hatirlatmalari', {
+      const response = await fetch(`${API_BASE_URL}/api/rapor-hatirlatmalari`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -372,7 +374,7 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
         email: p.email || ''
       }));
 
-      const response = await fetch('http://localhost:3001/api/rapor-hatirlatmalari/gonder', {
+      const response = await fetch(`${API_BASE_URL}/api/rapor-hatirlatmalari/gonder`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -411,7 +413,7 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('http://localhost:3001/api/personel', {
+      const response = await fetch(`${API_BASE_URL}/api/personel`, {
         headers: {
           'Content-Type': 'application/json',
           ...authService.getAuthHeader()
@@ -892,7 +894,7 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
         raporDurumu: raporForm.durum
       };
 
-      const response = await fetch('http://localhost:3001/api/personel-raporlari', {
+      const response = await fetch(`${API_BASE_URL}/api/personel-raporlari`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -946,7 +948,7 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
       
       console.log('İlk ay raporu kaydediliyor:', ilkAyRaporForm);
       
-      const response = await fetch('http://localhost:3001/api/ilk-ay-raporu', {
+      const response = await fetch(`${API_BASE_URL}/api/ilk-ay-raporu`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1037,7 +1039,7 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
       
       console.log('İkinci ay raporu kaydediliyor:', ikinciAyRaporForm);
       
-      const response = await fetch('http://localhost:3001/api/ikinci-ay-raporu', {
+      const response = await fetch(`${API_BASE_URL}/api/ikinci-ay-raporu`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1161,7 +1163,7 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
       
       console.log('6 Aylık Performans Raporu kaydediliyor:', standartRaporForm);
       
-      const response = await fetch('http://localhost:3001/api/standart-rapor', {
+      const response = await fetch(`${API_BASE_URL}/api/standart-rapor`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
