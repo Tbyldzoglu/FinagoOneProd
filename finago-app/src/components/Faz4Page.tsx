@@ -675,12 +675,13 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
       }));
       setIlkAyRaporModalOpen(true);
       
-      // Uyarı mesajları
-      if (deneyimGunu > 28) {
+      // Uyarı mesajları - Backend'den gelen rapor durumuna göre
+      // Backend 'acik' veya 'gecikti' durumunda uyarı göster
+      if (personel.ilkAyRaporDurumu === 'gecikti' && deneyimGunu > 28) {
         alert(`⚠️ 1. Ay Raporu GECİKMİŞ!\n\nRapor doldurma süresi ${deneyimGunu - 28} gün önce dolmuştur.\nLütfen hemen doldurunuz!`);
-      } else if (kalanGun <= 1) {
+      } else if (personel.ilkAyRaporDurumu === 'acik' && kalanGun <= 1) {
         alert(`🔴 1. Ay Raporu: SON GÜN! Bugün bu raporu doldurmanız gerekmektedir!`);
-      } else if (kalanGun <= 2) {
+      } else if (personel.ilkAyRaporDurumu === 'acik' && kalanGun <= 2) {
         alert(`⚠️ 1. Ay Raporu: ${kalanGun} gün kaldı! Lütfen en kısa sürede doldurunuz.`);
       }
       return;
@@ -706,12 +707,12 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
       }));
       setIkinciAyRaporModalOpen(true);
       
-      // Uyarı mesajları
-      if (deneyimGunu > 58) {
+      // Uyarı mesajları - Backend'den gelen rapor durumuna göre
+      if (personel.ikinciAyRaporDurumu === 'gecikti' && deneyimGunu > 58) {
         alert(`⚠️ 2. Ay Raporu GECİKMİŞ!\n\nRapor doldurma süresi ${deneyimGunu - 58} gün önce dolmuştur.\nLütfen hemen doldurunuz!`);
-      } else if (kalanGun <= 1) {
+      } else if (personel.ikinciAyRaporDurumu === 'acik' && kalanGun <= 1) {
         alert(`🔴 2. Ay Raporu: SON GÜN! Bugün bu raporu doldurmanız gerekmektedir!`);
-      } else if (kalanGun <= 2) {
+      } else if (personel.ikinciAyRaporDurumu === 'acik' && kalanGun <= 2) {
         alert(`⚠️ 2. Ay Raporu: ${kalanGun} gün kaldı! Lütfen en kısa sürede doldurunuz.`);
       }
       return;
@@ -737,12 +738,12 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
       }));
       setBesinciAyRaporModalOpen(true);
       
-      // Uyarı mesajları
-      if (deneyimGunu > 145) {
+      // Uyarı mesajları - Backend'den gelen rapor durumuna göre
+      if (personel.besinciAyRaporDurumu === 'gecikti' && deneyimGunu > 145) {
         alert(`⚠️ 5. Ay Raporu GECİKMİŞ!\n\nRapor doldurma süresi ${deneyimGunu - 145} gün önce dolmuştur.\nLütfen hemen doldurunuz!`);
-      } else if (kalanGun <= 1) {
+      } else if (personel.besinciAyRaporDurumu === 'acik' && kalanGun <= 1) {
         alert(`🔴 5. Ay Raporu: SON GÜN! Bugün bu raporu doldurmanız gerekmektedir!`);
-      } else if (kalanGun <= 3) {
+      } else if (personel.besinciAyRaporDurumu === 'acik' && kalanGun <= 3) {
         alert(`⚠️ 5. Ay Raporu: ${kalanGun} gün kaldı! Lütfen en kısa sürede doldurunuz.`);
       }
       return;
