@@ -53,6 +53,16 @@ class DatabaseService {
     }
 
     try {
+      // Türkçe karakterleri normalize et (Unicode NFC)
+      const normalizedDocId = docId.normalize('NFC');
+      
+      console.log('🔍 Document ID:', {
+        original: docId,
+        normalized: normalizedDocId,
+        originalLength: docId.length,
+        normalizedLength: normalizedDocId.length
+      });
+      
       // Önce modal_contents tablosunu kontrol et
       const tablesResult = await this.pool.request().query(
         "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'modal_contents'"
@@ -61,47 +71,113 @@ class DatabaseService {
       if (tablesResult.recordset.length > 0) {
         // modal_contents tablosu varsa onu kullan
         const req = this.pool.request();
-        req.input('doc_id', sql.NVarChar(255), docId);
+        req.input('doc_id', sql.NVarChar(255), normalizedDocId);
         req.input('user_id', sql.NVarChar(255), userId);
         const rowsResult = await req.query(
           'SELECT TOP 1 * FROM modal_contents WHERE doc_id = @doc_id AND user_id = @user_id ORDER BY updated_at DESC'
         );
 
         if (!rowsResult.recordset || rowsResult.recordset.length === 0) {
-          throw new Error(`Doküman bulunamadı: ${docId}`);
+          console.log(`⚠️ modal_contents'de bulunamadı, farklı normalizasyon deneniyor...`);
+          
+          // Alternatif: NFD (decomposed) ile dene
+          const req2 = this.pool.request();
+          req2.input('doc_id_nfd', sql.NVarChar(255), docId.normalize('NFD'));
+          req2.input('user_id', sql.NVarChar(255), userId);
+          const rowsResult2 = await req2.query(
+            'SELECT TOP 1 * FROM modal_contents WHERE doc_id = @doc_id_nfd AND user_id = @user_id ORDER BY updated_at DESC'
+          );
+          
+          if (!rowsResult2.recordset || rowsResult2.recordset.length === 0) {
+            throw new Error(`Doküman bulunamadı: ${normalizedDocId}`);
+          }
+          
+          return rowsResult2.recordset[0];
         }
 
         return rowsResult.recordset[0];
       } else {
+        // Helper fonksiyonunu en başta tanımla (her iki branch'te de kullanılacak)
+        const parseFieldSafely = (fieldValue) => {
+          if (!fieldValue) return null;
+          if (typeof fieldValue === 'string') {
+            try {
+              return JSON.parse(fieldValue);
+            } catch (e) {
+              return { content: fieldValue };
+            }
+          }
+          return fieldValue;
+        };
+        
         // modal_contents yoksa analiz_faz1 tablosunu kullan
         // En büyük ID'ye sahip kaydı al (en son eklenen)
         const req = this.pool.request();
-        req.input('doc', sql.NVarChar(255), docId);
+        req.input('doc', sql.NVarChar(255), normalizedDocId);
         const rowsResult = await req.query(
           'SELECT TOP 1 * FROM analiz_faz1 WHERE yuklenen_dokuman = @doc ORDER BY id DESC'
         );
 
         if (!rowsResult.recordset || rowsResult.recordset.length === 0) {
-          throw new Error(`Doküman bulunamadı: ${docId}`);
-        }
-
-        // Helper: JSON string veya object'i parse et
-        const parseFieldSafely = (fieldValue) => {
-          if (!fieldValue) return null;
+          console.log(`⚠️ analiz_faz1'de bulunamadı, farklı normalizasyon deneniyor...`);
           
-          // Eğer JSON string ise parse et
-          if (typeof fieldValue === 'string') {
-            try {
-              return JSON.parse(fieldValue);
-            } catch (e) {
-              // Parse edilemezse düz text olarak kabul et
-              return { content: fieldValue };
-            }
+          // Alternatif: NFD (decomposed) ile dene
+          const req2 = this.pool.request();
+          req2.input('doc_nfd', sql.NVarChar(255), docId.normalize('NFD'));
+          const rowsResult2 = await req2.query(
+            'SELECT TOP 1 * FROM analiz_faz1 WHERE yuklenen_dokuman = @doc_nfd ORDER BY id DESC'
+          );
+          
+          if (!rowsResult2.recordset || rowsResult2.recordset.length === 0) {
+            throw new Error(`Doküman bulunamadı: ${normalizedDocId}`);
           }
           
-          // Zaten object ise olduğu gibi döndür
-          return fieldValue;
-        };
+          // Bu kez rowsResult2'yi kullan
+          const row2 = rowsResult2.recordset[0];
+          
+          // analiz_faz1 formatını modal_contents formatına çevir
+          return {
+            id: row2.id,
+            doc_id: normalizedDocId,
+            user_id: userId,
+            created_at: row2.yuklenme_tarihi,
+            updated_at: row2.yuklenme_tarihi,
+            amac_kapsam: row2.amac_kapsam ? JSON.stringify({content: row2.amac_kapsam}) : null,
+            talep_bilgileri_modal: parseFieldSafely(row2.talep_bilgileri),
+            dokuman_tarihcesi: parseFieldSafely(row2.dokuman_tarihcesi),
+            talep_degerlendirmesi_modal: parseFieldSafely(row2.talep_degerlendirmesi),
+            mevcut_isleyis_modal: row2.mevcut_isleyis ? JSON.stringify({content: row2.mevcut_isleyis}) : null,
+            planlanan_isleyis_modal: row2.planlanan_isleyis ? JSON.stringify({content: row2.planlanan_isleyis}) : null,
+            fonksiyonel_gereksinimler_modal: row2.fonksiyonel_gereksinimler ? JSON.stringify({content: row2.fonksiyonel_gereksinimler}) : null,
+            ekran_gereksinimleri_modal: row2.ekran_gereksinimleri ? JSON.stringify({content: row2.ekran_gereksinimleri}) : null,
+            x_ekrani_modal: row2.x_ekrani ? JSON.stringify({content: row2.x_ekrani}) : null,
+            ekran_tasarimlari_modal: parseFieldSafely(row2.ekran_tasarimlari),
+            tasklar_batchlar_modal: parseFieldSafely(row2.tasklar_batchlar),
+            task_is_akisi_modal: row2.task_is_akisi ? JSON.stringify({content: row2.task_is_akisi}) : null,
+            entegrasyonlar_modal: parseFieldSafely(row2.entegrasyonlar),
+            mesajlar_modal: parseFieldSafely(row2.mesajlar),
+            parametreler_modal: parseFieldSafely(row2.parametreler),
+            conversation_migration_modal: row2.conversation_migration ? JSON.stringify({content: row2.conversation_migration}) : null,
+            diagram_akislar_modal: row2.diagram_akislar ? JSON.stringify({content: row2.diagram_akislar}) : null,
+            muhasebe_modal: row2.muhasebe ? JSON.stringify({content: row2.muhasebe}) : null,
+            x_islemi_muhasebesi_modal: parseFieldSafely(row2.x_islemi_muhasebesi),
+            x_islemi_muhasebe_deseni_modal: row2.x_islemi_muhasebe_deseni ? JSON.stringify({content: row2.x_islemi_muhasebe_deseni}) : null,
+            case1_modal: parseFieldSafely(row2.case1),
+            x_islemi_kayit_kurallari_modal: row2.x_islemi_kayit_kurallari ? JSON.stringify({content: row2.x_islemi_kayit_kurallari}) : null,
+            x_islemi_vergi_komisyon_modal: row2.x_islemi_vergi_komisyon ? JSON.stringify({content: row2.x_islemi_vergi_komisyon}) : null,
+            x_islemi_muhasebe_senaryolari_modal: row2.x_islemi_muhasebe_senaryolari ? JSON.stringify({content: row2.x_islemi_muhasebe_senaryolari}) : null,
+            x_islemi_ornek_kayitlar_modal: row2.x_islemi_ornek_kayitlar ? JSON.stringify({content: row2.x_islemi_ornek_kayitlar}) : null,
+            fonksiyonel_olmayan_gereksinimler_modal: row2.fonksiyonel_olmayan_gereksinimler ? JSON.stringify({content: row2.fonksiyonel_olmayan_gereksinimler}) : null,
+            kimlik_dogrulama_log_modal: row2.kimlik_dogrulama_log ? JSON.stringify({content: row2.kimlik_dogrulama_log}) : null,
+            yetkilendirme_onay_modal: parseFieldSafely(row2.yetkilendirme_onay),
+            veri_kritikligi_modal: parseFieldSafely(row2.veri_kritikligi),
+            paydaslar_kullanicilar_modal: parseFieldSafely(row2.paydaslar_kullanicilar),
+            kapsam_disinda_modal: row2.kapsam_disinda ? JSON.stringify({content: row2.kapsam_disinda}) : null,
+            kabul_kriterleri_modal: parseFieldSafely(row2.kabul_kriterleri),
+            onaylar_modal: parseFieldSafely(row2.onaylar),
+            ekler_modal: row2.ekler ? JSON.stringify({content: row2.ekler}) : null
+          };
+        }
         
         // analiz_faz1 formatını modal_contents formatına çevir
         const row = rowsResult.recordset[0];

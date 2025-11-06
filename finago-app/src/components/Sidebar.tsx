@@ -100,6 +100,13 @@ const Sidebar: React.FC<SidebarProps> = ({
           badge: 'YENİ'
         },
         {
+          id: 'personel-yonetimi',
+          title: 'Personel Yönetimi',
+          icon: '👥',
+          path: '/insan-kaynaklari/personel-yonetimi',
+          badge: 'YÖNETİM'
+        },
+        {
           id: 'faz4',
           title: 'Performans Skorlama',
           icon: '📋',
@@ -114,13 +121,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           badge: 'İK'
         }
       ]
-    },
-    {
-      id: 'admin-panel',
-      title: 'Admin Panel',
-      icon: '🛡️',
-      path: '/admin-panel',
-      badge: 'ADMIN'
     }
   ];
 
@@ -174,6 +174,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       case 'ik': return 'new';
       case 'İk': return 'new';
       case 'admin': return 'pro';
+      case 'yönetim': return 'yonetim';
       default: return '';
     }
   };
@@ -315,34 +316,60 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Kullanıcı Profili ve Çıkış */}
         <div className="sidebar-footer">
-          {/* Kullanıcı Profili */}
-          <div className="sidebar-user-profile">
-            <div className="sidebar-user-avatar">
-              {userProfile.name.charAt(0).toUpperCase()}
-            </div>
-            <div className="sidebar-user-info">
-              <div className="sidebar-user-name">{userProfile.name}</div>
-              <div className="sidebar-user-email">{userProfile.email}</div>
-              <div className="sidebar-user-status">
-                Çevrimiçi
-              </div>
-            </div>
-          </div>
-
-          {/* Güvenli Çıkış */}
+          {/* Admin Panel Butonu */}
           <div 
-            className="sidebar-logout"
-            onClick={handleLogout}
+            className="sidebar-admin-button"
+            onClick={() => {
+              if (onNavigate) {
+                onNavigate('admin-panel');
+              }
+            }}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                handleLogout();
+                if (onNavigate) {
+                  onNavigate('admin-panel');
+                }
               }
             }}
           >
-            <div className="sidebar-logout-icon">🚪</div>
+            <div className="admin-button-icon">🛡️</div>
+            <div className="admin-button-text">Admin Panel</div>
+          </div>
+
+          {/* Alt kısım: Kullanıcı Profili ve Çıkış */}
+          <div className="sidebar-footer-bottom">
+            {/* Kullanıcı Profili */}
+            <div className="sidebar-user-profile">
+              <div className="sidebar-user-avatar">
+                {userProfile.name.charAt(0).toUpperCase()}
+              </div>
+              <div className="sidebar-user-info">
+                <div className="sidebar-user-name">{userProfile.name}</div>
+                <div className="sidebar-user-email">{userProfile.email}</div>
+                <div className="sidebar-user-status">
+                  Çevrimiçi
+                </div>
+              </div>
+            </div>
+
+            {/* Güvenli Çıkış */}
+            <div 
+              className="sidebar-logout"
+              onClick={handleLogout}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleLogout();
+                }
+              }}
+            >
+              <div className="sidebar-logout-icon">🚪</div>
+            </div>
           </div>
         </div>
       </div>

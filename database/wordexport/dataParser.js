@@ -884,18 +884,16 @@ class DataParser {
     }
 
     // Eğer content property'si varsa onu kullan
-    if (modalData.content) {
+    if (modalData.content !== undefined) {
+      // content boş string veya dolu olabilir - cleanValue handle eder
       result[fieldName] = this.cleanValue(modalData.content);
     }
-    // Eğer content yoksa ama modalData direkt text ise
-    else if (typeof modalData === 'string') {
-      result[fieldName] = this.cleanValue(modalData);
-    }
-    // Eğer hiçbiri yoksa boş string
+    // Eğer content yoksa boş string
     else {
       result[fieldName] = '';
     }
     
+    // Meta bilgileri ekle (opsiyonel - template'de varsa)
     if (modalData.title) {
       result[`${fieldName}_title`] = modalData.title;
     }
@@ -1691,12 +1689,15 @@ class DataParser {
           const rawData = JSON.parse(modalData[modalName]);
           let textContent = '';
           
+          console.log(`📊 ${modalName} RAW DATA:`, JSON.stringify(rawData).substring(0, 200));
+          
           // Çifte JSON kontrol et (amac_kapsam gibi)
-          if (rawData && rawData.content) {
+          if (rawData && rawData.content !== undefined) {
+            // content property'si var (boş string olabilir)
             try {
               // İçteki JSON'u parse etmeye çalış
               const innerData = JSON.parse(rawData.content);
-              if (innerData && innerData.content) {
+              if (innerData && innerData.content !== undefined) {
                 textContent = innerData.content;
               } else {
                 textContent = rawData.content;
@@ -1709,11 +1710,15 @@ class DataParser {
             textContent = rawData;
           }
           
-          console.log(`✅ ${modalName} content uzunluğu: ${textContent.length}`);
+          console.log(`✅ ${modalName} textContent: "${textContent}" (length: ${textContent?.length || 0})`);
           
           // Field adını temizle (_modal suffix'ini kaldır)
           const fieldName = modalName.replace('_modal', '');
-          result[fieldName] = this.cleanValue(textContent);
+          const cleanedValue = this.cleanValue(textContent);
+          
+          console.log(`🧹 ${modalName} cleanValue result: "${cleanedValue}" (length: ${cleanedValue?.length || 0})`);
+          
+          result[fieldName] = cleanedValue;
         } catch (error) {
           console.log(`❌ ${modalName} parse hatası:`, error.message);
           // JSON parse edilemezse direkt string olarak kullan
@@ -1816,26 +1821,72 @@ class DataParser {
   }
 
   /**
+   * Kontrol karakterlerini temizle (XML için geçersiz karakterler)
+   */
+  removeInvalidXmlChars(str) {
+    if (!str) return '';
+    // Sadece kontrol karakterlerini temizle (tab, newline, carriage return hariç)
+    // docx-templates library zaten < > & " ' karakterlerini escape ediyor
+    return String(str)
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+      .replace(/\uFFFD/g, ''); // Replacement character'ı da temizle
+  }
+
+  /**
    * Değeri temizle ve formatla
    */
   cleanValue(value) {
+    // Null veya undefined → boş string
     if (value === null || value === undefined) {
       return '';
     }
     
+    // Boolean → "Evet" / "Hayır"
     if (typeof value === 'boolean') {
       return value ? 'Evet' : 'Hayır';
     }
     
+    // Number → string'e çevir
     if (typeof value === 'number') {
       return value.toString();
     }
     
-    if (typeof value === 'string') {
-      return value.trim();
+    // Object → JSON formatında export edilmesin
+    if (typeof value === 'object') {
+      // Array kontrolü
+      if (Array.isArray(value)) {
+        // Boş array → boş string
+        if (value.length === 0) {
+          return '';
+        }
+        // Array'i join ile string'e çevir
+        return this.removeInvalidXmlChars(value.join(', '));
+      }
+      
+      // Object için özel durumlar
+      // Eğer object'te 'content' property'si varsa, onu kullan
+      if (value.content !== undefined) {
+        return this.cleanValue(value.content);
+      }
+      
+      // Boş object {} → boş string
+      if (Object.keys(value).length === 0) {
+        return '';
+      }
+      
+      // Object'i JSON string'e çevirme (bu istenmeyen durum)
+      // Loglayalım ki hangi object'lerin sızdığını görelim
+      console.warn('⚠️ Object değer boş stringe çevriliyor:', JSON.stringify(value).substring(0, 100));
+      return '';
     }
     
-    return String(value).trim();
+    // String → trim et ve geçersiz karakterleri temizle
+    if (typeof value === 'string') {
+      return this.removeInvalidXmlChars(value.trim());
+    }
+    
+    // Diğer tipler → string'e çevir
+    return this.removeInvalidXmlChars(String(value).trim());
   }
 
   /**

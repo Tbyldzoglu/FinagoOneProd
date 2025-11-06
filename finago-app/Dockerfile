@@ -1,0 +1,23 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY . .
+
+RUN npm install && npm install n8n -g && npm install tedious
+
+RUN apk add --no-cache supervisor
+
+ENV N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+ENV N8N_DEFAULT_CORS_ALLOW_ORIGIN=*
+ENV GENERIC_TIMEZONE=Europe/Istanbul
+ENV DB_TYPE=postgresdb
+ENV DB_POSTGRESDB_HOST=192.168.84.21
+ENV DB_POSTGRESDB_PORT=5432
+ENV DB_POSTGRESDB_DATABASE=n8n
+ENV DB_POSTGRESDB_SCHEMA=finagoone
+ENV DB_POSTGRESDB_USER=finagoone-n8n
+ENV DB_POSTGRESDB_PASSWORD="Jk7s(esMs34"
+ENV N8N_ENCRYPTION_KEY=ZpcICooVZJV28YRs0r7ERlG0g5waGblI
+
+CMD ["/usr/bin/supervisord"]

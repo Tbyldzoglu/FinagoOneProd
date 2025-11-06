@@ -123,8 +123,18 @@ export const exportAndDownload = async (
   templateFileName: string = 'Analiz Güncel verisyon v3.docx'
 ): Promise<{ success: boolean; error?: string }> => {
   try {
+    // 🔧 TIMESTAMP TEMİZLE: Eğer dosya adı timestamp içeriyorsa, orijinal adı al
+    // Format: OriginalName.docx_2025-11-05T12-37-27-692Z.docx
+    const timestampPattern = /_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.docx$/;
+    let cleanDocumentName = documentName;
+    
+    if (timestampPattern.test(documentName)) {
+      cleanDocumentName = documentName.replace(timestampPattern, '');
+      console.log(`🔧 Timestamp temizlendi: ${documentName} → ${cleanDocumentName}`);
+    }
+    
     // Önce export et
-    const exportResult = await exportDocumentToWord(documentName, userId, templateFileName);
+    const exportResult = await exportDocumentToWord(cleanDocumentName, userId, templateFileName);
     
     if (!exportResult.success) {
       return {

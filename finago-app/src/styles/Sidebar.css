@@ -230,18 +230,22 @@
   align-items: center;
   gap: var(--spacing-sm);
   flex: 1;
+  min-width: 0;
 }
 
 .sidebar-controls-right {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+  flex-shrink: 0;
 }
 
 .controls-section {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .controls-label {
@@ -251,6 +255,9 @@
   text-transform: uppercase;
   letter-spacing: 0.8px;
   line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .controls-value {
@@ -258,6 +265,9 @@
   font-size: 8px;
   font-weight: 500;
   line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Control groups */
@@ -269,6 +279,8 @@
   border-radius: var(--radius-md);
   transition: all var(--transition-normal);
   position: relative;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .control-group:hover {
@@ -489,6 +501,12 @@
   animation: glow-purple 2s ease-in-out infinite alternate;
 }
 
+.sidebar-menu-badge.yonetim {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  animation: glow-blue 2s ease-in-out infinite alternate;
+}
+
 /* Badge glow animasyonları */
 @keyframes glow-orange {
   0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.5); }
@@ -508,6 +526,11 @@
 @keyframes glow-purple {
   0% { box-shadow: 0 0 5px rgba(139, 92, 246, 0.5); }
   100% { box-shadow: 0 0 15px rgba(139, 92, 246, 0.8); }
+}
+
+@keyframes glow-blue {
+  0% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
+  100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.8); }
 }
 
 /**
@@ -581,6 +604,57 @@
   border-top: 1px solid var(--border-secondary);
   padding: var(--spacing-sm);
   background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/**
+ * Admin Panel Butonu
+ * Footer'da kullanıcı bilgisinin üstünde konumlandırılmış
+ */
+.sidebar-admin-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 8px;
+  color: #a78bfa;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  width: 100%;
+}
+
+.sidebar-admin-button:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25) 0%, rgba(168, 85, 247, 0.25) 100%);
+  border-color: rgba(139, 92, 246, 0.5);
+  color: #c4b5fd;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+}
+
+.admin-button-icon {
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.admin-button-text {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  flex: 1;
+}
+
+/**
+ * Footer Bottom - Kullanıcı ve Çıkış
+ */
+.sidebar-footer-bottom {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -783,6 +857,18 @@
   .sidebar-footer {
     padding: var(--spacing-md);
   }
+
+  .sidebar-admin-button {
+    padding: 8px 10px;
+  }
+
+  .admin-button-text {
+    font-size: 9px;
+  }
+
+  .admin-button-icon {
+    font-size: 14px;
+  }
 }
 
 /* Tablet and Mobile - 768px and below */
@@ -840,6 +926,18 @@
     width: 27px;
     height: 27px;
     font-size: 11px;
+  }
+
+  .sidebar-admin-button {
+    padding: 8px 10px;
+  }
+
+  .admin-button-text {
+    font-size: 9px;
+  }
+
+  .admin-button-icon {
+    font-size: 14px;
   }
 }
 

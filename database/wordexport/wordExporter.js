@@ -28,24 +28,33 @@ class WordExporter {
       // Template'i oku
       const templateBuffer = await fs.readFile(templatePath);
       
-      // Debug: Data'yı console'a yazdır
-      console.log('🔍 Export Data Debug:', JSON.stringify(data, null, 2));
+      // Debug: Data field sayısını logla
+      console.log(`🔍 Export Data: ${Object.keys(data).length} fields`);
       
       // Text field'larının object yerine string olduğundan emin ol
       const processedData = { ...data };
       Object.keys(processedData).forEach(key => {
         const value = processedData[key];
         if (value && typeof value === 'object' && value.content) {
-          console.log(`🔧 Converting ${key} from object to string:`, value.content);
+          console.log(`🔧 Converting ${key} from object to string`);
           processedData[key] = value.content;
+        }
+        
+        // Çok uzun değerleri logla (muhtemelen sorun kaynağı)
+        if (typeof processedData[key] === 'string' && processedData[key].length > 10000) {
+          console.warn(`⚠️ ${key} çok uzun (${processedData[key].length} karakter)`);
         }
       });
       
+      console.log('✅ Data işlendi, template dolduruluyor...');
+      
       // Template'i dinamik olarak düzenle (doküman tarihçesi için)
+      // ⚠️ DEVRE DIŞI: adjustTableRows XML'i bozuyor, template'de tüm satırları tanımlıyoruz
       let modifiedTemplate = templateBuffer;
-      if (data.row_count && data.row_count > 0) {
-        modifiedTemplate = await this.adjustTableRows(templateBuffer, data.row_count);
-      }
+      // if (data.row_count && data.row_count > 0) {
+      //   modifiedTemplate = await this.adjustTableRows(templateBuffer, data.row_count);
+      // }
+      console.log('ℹ️ Template düzenlemesi atlandı (tüm satırlar template\'de mevcut)');
       
       // Word dokümanını oluştur
       const report = await createReport({

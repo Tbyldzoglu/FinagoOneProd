@@ -5,9 +5,12 @@
  * Bu sayfa yeni personellerin sisteme kaydedilmesini sağlar.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../styles/PersonelKayit.css';
 import authService from '../services/authService';
+import { useTheme } from '../contexts/ThemeContext';
+
+const API_BASE_URL = process.env.REACT_APP_DATABASE_API_URL || 'http://localhost:3001';
 
 interface PersonelKayitForm {
   ad: string;
@@ -22,10 +25,25 @@ interface PersonelKayitProps {
 }
 
 const PersonelKayit: React.FC<PersonelKayitProps> = ({ onNavigate }) => {
+  const { isDark } = useTheme();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [hasPermission, setHasPermission] = useState<boolean>(true);
+
+  // Dark mode class'ını body'ye ekle/çıkar
+  useEffect(() => {
+    if (isDark) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+    
+    // Cleanup
+    return () => {
+      document.body.classList.remove('dark-mode');
+    };
+  }, [isDark]);
 
   const [formData, setFormData] = useState<PersonelKayitForm>({
     ad: '',
@@ -95,16 +113,6 @@ const PersonelKayit: React.FC<PersonelKayitProps> = ({ onNavigate }) => {
       return false;
     }
     
-    // Tarih kontrolü - gelecek tarih olamaz
-    const baslangicTarihi = new Date(formData.iseBaslamaTarihi);
-    const bugun = new Date();
-    bugun.setHours(0, 0, 0, 0);
-    
-    if (baslangicTarihi > bugun) {
-      setError('İşe başlama tarihi gelecek bir tarih olamaz.');
-      return false;
-    }
-    
     return true;
   };
 
@@ -121,7 +129,7 @@ const PersonelKayit: React.FC<PersonelKayitProps> = ({ onNavigate }) => {
       setError(null);
       setSuccess(null);
       
-      const response = await fetch('http://localhost:3001/api/personel', {
+      const response = await fetch(`${API_BASE_URL}/api/personel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -388,12 +396,11 @@ const PersonelKayit: React.FC<PersonelKayitProps> = ({ onNavigate }) => {
                     name="iseBaslamaTarihi"
                     value={formData.iseBaslamaTarihi}
                     onChange={handleInputChange}
-                    max={new Date().toISOString().split('T')[0]}
                     className="form-input"
                     disabled={loading}
                   />
                   <small className="form-hint">
-                    ℹ️ İşe başlama tarihi bugünden ileri bir tarih olamaz
+                    ℹ️ Gelecek tarihli personel kaydı yapılabilir
                   </small>
                 </div>
               </div>

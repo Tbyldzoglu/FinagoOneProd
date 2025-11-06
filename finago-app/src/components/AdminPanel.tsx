@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import authService from '../services/authService';
+import { useTheme } from '../contexts/ThemeContext';
 import '../styles/AdminPanel.css';
 
 interface User {
@@ -45,6 +46,7 @@ interface Stats {
 }
 
 const AdminPanel: React.FC = () => {
+  const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState<'users' | 'permissions' | 'stats'>('users');
   const [users, setUsers] = useState<User[]>([]);
   const [gruplar, setGruplar] = useState<Grup[]>([]);
@@ -53,6 +55,20 @@ const AdminPanel: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Dark mode class'ını body'ye ekle/çıkar
+  useEffect(() => {
+    if (isDark) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+    
+    // Cleanup
+    return () => {
+      document.body.classList.remove('dark-mode');
+    };
+  }, [isDark]);
 
   // Grup tanımları (Faz4Page ile aynı)
   const grupTanımları: Record<string, string> = {
@@ -378,7 +394,7 @@ const AdminPanel: React.FC = () => {
                           )}
                         </td>
                         <td>
-                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <div className="action-buttons">
                             <button
                               className="btn-small btn-primary"
                               onClick={() => {

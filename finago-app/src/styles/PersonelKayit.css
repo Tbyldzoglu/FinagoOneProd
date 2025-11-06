@@ -264,11 +264,19 @@
 
 .form-select {
   cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234a5568' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 1rem center;
+  background-position: calc(100% - 1rem) center;
+  background-size: 12px 12px;
   padding-right: 2.5rem;
+}
+
+/* Remove default select arrow in IE */
+.form-select::-ms-expand {
+  display: none;
 }
 
 .form-hint {
@@ -482,7 +490,7 @@
   }
 }
 
-/* Dark Mode Support */
+/* Dark Mode Support - Sistem Tercihi */
 @media (prefers-color-scheme: dark) {
   .form-container,
   .error-message {
@@ -499,8 +507,9 @@
   .form-header p,
   .form-group label,
   .alert-content p,
-  .footer-info p {
-    color: #a0aec0;
+  .footer-info p,
+  .form-hint {
+    color: #cbd5e0;
   }
 
   .form-input,
@@ -510,16 +519,110 @@
     color: #e2e8f0;
   }
 
+  .form-input::placeholder {
+    color: #718096;
+    opacity: 1;
+  }
+
+  .form-select option {
+    background: #2d3748;
+    color: #e2e8f0;
+  }
+
   .form-input:focus,
   .form-select:focus {
     background: #374151;
     border-color: #667eea;
   }
 
+  .form-input:disabled,
+  .form-select:disabled {
+    background: #1a202c;
+    color: #4a5568;
+  }
+
   .form-group-section {
     background: #2d3748;
     border-color: #4a5568;
   }
+
+  /* Select arrow dark mode - override light mode arrow */
+  .form-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23cbd5e0' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: calc(100% - 1rem) center;
+    background-size: 12px 12px;
+  }
+
+  .error-message p {
+    color: #cbd5e0;
+  }
+}
+
+/* Dark Mode - Manual Toggle (body.dark-mode) */
+body.dark-mode .personel-kayit-page .form-container,
+body.dark-mode .personel-kayit-page .error-message {
+  background: rgba(45, 55, 72, 0.95);
+}
+
+body.dark-mode .personel-kayit-page .form-header h2,
+body.dark-mode .personel-kayit-page .section-title,
+body.dark-mode .personel-kayit-page .alert-content strong,
+body.dark-mode .personel-kayit-page .footer-info strong {
+  color: #e2e8f0;
+}
+
+body.dark-mode .personel-kayit-page .form-header p,
+body.dark-mode .personel-kayit-page .form-group label,
+body.dark-mode .personel-kayit-page .alert-content p,
+body.dark-mode .personel-kayit-page .footer-info p,
+body.dark-mode .personel-kayit-page .form-hint {
+  color: #cbd5e0;
+}
+
+body.dark-mode .personel-kayit-page .form-input,
+body.dark-mode .personel-kayit-page .form-select {
+  background: #2d3748;
+  border-color: #4a5568;
+  color: #e2e8f0;
+}
+
+body.dark-mode .personel-kayit-page .form-input::placeholder {
+  color: #718096;
+  opacity: 1;
+}
+
+body.dark-mode .personel-kayit-page .form-select option {
+  background: #2d3748;
+  color: #e2e8f0;
+}
+
+body.dark-mode .personel-kayit-page .form-input:focus,
+body.dark-mode .personel-kayit-page .form-select:focus {
+  background: #374151;
+  border-color: #667eea;
+}
+
+body.dark-mode .personel-kayit-page .form-input:disabled,
+body.dark-mode .personel-kayit-page .form-select:disabled {
+  background: #1a202c;
+  color: #4a5568;
+}
+
+body.dark-mode .personel-kayit-page .form-group-section {
+  background: #2d3748;
+  border-color: #4a5568;
+}
+
+body.dark-mode .personel-kayit-page .form-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23cbd5e0' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 1rem) center;
+  background-size: 12px 12px;
+}
+
+body.dark-mode .personel-kayit-page .error-message p {
+  color: #cbd5e0;
 }
 
 

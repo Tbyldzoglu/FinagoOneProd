@@ -20,12 +20,14 @@ interface Personel {
   aktif: boolean;
   olusturmaTarihi?: string;
   guncellemeTarihi?: string;
-  ilkAyRaporDurumu?: string;
-  ikinciAyRaporDurumu?: string;
-  altiAylikRaporDurumu?: string;
+  ilkAyRaporDurumu?: string; // Backend'den gelen: 'bekleniyor' | 'tamamlandi' | 'gecikti'
+  ikinciAyRaporDurumu?: string; // Backend'den gelen: 'bekleniyor' | 'tamamlandi' | 'gecikti'
+  besinciAyRaporDurumu?: string; // Backend'den gelen: 'bekleniyor' | 'tamamlandi' | 'gecikti' | 'acik'
+  sonStandartRaporTarihi?: string; // Son 6 aylık rapor tarihi (her 6 ayda bir kontrol için)
   sonrakiRaporTarihi?: string;
   sonrakiRaporTipi?: string;
-  raporDurumu?: string; // Frontend'de hesaplanan durum
+  raporDurumu?: string; // Frontend'de hesaplanan durum: 'yeni' | 'guncel' | 'yaklasan' | 'gecikmis'
+  calismaGunu?: number; // Backend'den gelen
 }
 
 interface Grup {
@@ -37,6 +39,7 @@ interface Grup {
   yaklasanRapor: number;
   guncelRapor: number;
   yeniPersonel: number;
+  henuzBaslamadi: number;
 }
 
 interface Rapor {
@@ -84,6 +87,18 @@ interface IkinciAyRaporu {
   durum: 'taslak' | 'tamamlandi' | 'onaylandi';
 }
 
+interface BesinciAyRaporu {
+  id: string;
+  personelId: number;
+  tarih: string;
+  performansDegerlendirmesi: string;
+  gucluYonler: string;
+  geliştirilmesiGerekenAlanlar: string;
+  hedefler: string;
+  genelPuan?: number;
+  durum: 'taslak' | 'tamamlandi' | 'onaylandi';
+}
+
 interface StandartRaporu {
   id: string;
   personelId: number;
@@ -127,6 +142,7 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
   const [raporModalOpen, setRaporModalOpen] = useState(false);
   const [ilkAyRaporModalOpen, setIlkAyRaporModalOpen] = useState(false);
   const [ikinciAyRaporModalOpen, setIkinciAyRaporModalOpen] = useState(false);
+  const [besinciAyRaporModalOpen, setBesinciAyRaporModalOpen] = useState(false);
   const [standartRaporModalOpen, setStandartRaporModalOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   
@@ -177,6 +193,19 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
     soru4_puan: undefined,
     durum: 'taslak'
   });
+
+  const [besinciAyRaporForm, setBesinciAyRaporForm] = useState<BesinciAyRaporu>({
+    id: '',
+    personelId: 0,
+    tarih: new Date().toISOString().split('T')[0],
+    performansDegerlendirmesi: '',
+    gucluYonler: '',
+    geliştirilmesiGerekenAlanlar: '',
+    hedefler: '',
+    genelPuan: undefined,
+    durum: 'taslak'
+  });
+
   const [standartRaporForm, setStandartRaporForm] = useState<StandartRaporu>({
     id: '',
     personelId: 0,
@@ -247,6 +276,7 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
       const yaklasanRapor = personeller.filter(p => p.raporDurumu === 'yaklasan').length;
       const guncelRapor = personeller.filter(p => p.raporDurumu === 'guncel').length;
       const yeniPersonel = personeller.filter(p => p.raporDurumu === 'yeni').length;
+      const henuzBaslamadi = personeller.filter(p => p.raporDurumu === 'henuz_baslamadi').length;
       
       return {
         adi: grupAdi,
@@ -256,7 +286,8 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
         gecikmisRapor,
         yaklasanRapor,
         guncelRapor,
-        yeniPersonel
+        yeniPersonel,
+        henuzBaslamadi
       };
     });
   };
@@ -390,10 +421,25 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
       if (response.ok) {
         const data = await response.json();
         
-        // Rapor durumlarını hesapla
+        // Rapor durumlarını hesapla (backend'den gelen rapor durumlarını kullan)
         const personelWithStatus = data.map((person: Personel) => {
           const nextReportDate = calculateNextReportDate(person.iseBaslamaTarihi);
-          const reportStatus = getReportStatus(nextReportDate, person.iseBaslamaTarihi);
+          const reportStatus = getReportStatus(
+            nextReportDate, 
+            person.iseBaslamaTarihi,
+            person.ilkAyRaporDurumu,
+            person.ikinciAyRaporDurumu,
+            person.besinciAyRaporDurumu
+          );
+          
+          console.log(`
+            📊 ${person.ad} ${person.soyad}:
+            Çalışma Günü: ${person.calismaGunu} gün
+            İlk Ay Raporu: ${person.ilkAyRaporDurumu || 'bekleniyor'}
+            İkinci Ay Raporu: ${person.ikinciAyRaporDurumu || 'bekleniyor'}
+            5. Ay Raporu: ${person.besinciAyRaporDurumu || 'bekleniyor'}
+            Rapor Durumu: ${reportStatus}
+          `);
           
           return {
             ...person,
@@ -437,7 +483,7 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
       nextReportDate = new Date(baslamaTarihi);
       nextReportDate.setDate(nextReportDate.getDate() + 60);
     } else {
-      // 60+ gün deneyim: Standart raporlar (sadece Ocak ve Ağustos)
+      // 60+ gün deneyim: 6 Aylık Performans Raporları (sadece Ocak ve Ağustos)
       const currentYear = bugun.getFullYear();
       const currentMonth = bugun.getMonth(); // 0-11 arası
       
@@ -460,7 +506,13 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
     return nextReportDate.toISOString().split('T')[0];
   };
 
-  const getReportStatus = (sonrakiRaporTarihi: string, iseBaslamaTarihi: string): 'guncel' | 'yaklasan' | 'gecikmis' | 'yeni' => {
+  const getReportStatus = (
+    sonrakiRaporTarihi: string, 
+    iseBaslamaTarihi: string, 
+    ilkAyRaporDurumu?: string,
+    ikinciAyRaporDurumu?: string,
+    besinciAyRaporDurumu?: string
+  ): 'guncel' | 'yaklasan' | 'gecikmis' | 'yeni' | 'henuz_baslamadi' | 'acik' | 'birinci_ay_bekleniyor' => {
     const bugun = new Date();
     const raporTarihi = new Date(sonrakiRaporTarihi);
     const baslamaTarihi = new Date(iseBaslamaTarihi);
@@ -469,12 +521,36 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
     // İşe başlama tarihinden bugüne kadar geçen süre (gün cinsinden)
     const deneyimGunu = Math.floor((bugun.getTime() - baslamaTarihi.getTime()) / (1000 * 60 * 60 * 24));
     
+    // ÖNCELİK 0: Henüz işe başlamamış personeller (gelecek tarihli)
+    if (ilkAyRaporDurumu === 'henuz_baslamadi' || ikinciAyRaporDurumu === 'henuz_baslamadi' || deneyimGunu < 0) {
+      return 'henuz_baslamadi';
+    }
+    
+    // ÖNCELİK 1: GECİKMİŞ RAPOR (Backend'den 'gecikti' geliyorsa)
+    if (ilkAyRaporDurumu === 'gecikti' || ikinciAyRaporDurumu === 'gecikti' || besinciAyRaporDurumu === 'gecikti') {
+      return 'gecikmis';
+    }
+    
+    // ÖNCELİK 2: Rapor açık (doldurulabilir)
+    if (ilkAyRaporDurumu === 'acik' || ikinciAyRaporDurumu === 'acik' || besinciAyRaporDurumu === 'acik') {
+      return 'acik';
+    }
+    
+    // ÖNCELİK 3: 2. ay raporu için 1. ay bekleniyor veya 5. ay için önceki raporlar bekleniyor
+    if (ikinciAyRaporDurumu === 'birinci_ay_bekleniyor' || besinciAyRaporDurumu === 'onceki_raporlar_bekleniyor') {
+      return 'birinci_ay_bekleniyor';
+    }
+    
+    // ÖNCELİK 4: Yeni personeller (25 günden az çalışanlar)
+    if (deneyimGunu < 25) {
+      return 'yeni';
+    }
+    
+    // ÖNCELİK 5: Sonraki rapor tarihine göre durum
     if (gunFarki < 0) return 'gecikmis';
     if (gunFarki <= 7) return 'yaklasan';
     if (gunFarki <= 30) return 'guncel';
     
-    // Sadece gerçekten yeni personeller (30 günden az) için "yeni" durumu
-    if (deneyimGunu < 30) return 'yeni';
     return 'guncel';
   };
 
@@ -485,17 +561,24 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
     // İşe başlama tarihinden bugüne kadar geçen süre (gün cinsinden)
     const deneyimGunu = Math.floor((bugun.getTime() - baslamaTarihi.getTime()) / (1000 * 60 * 60 * 24));
 
-    if (deneyimGunu < 30) return 'ilkAy';
-    if (deneyimGunu < 60) return 'ikinciAy';
+    if (deneyimGunu < 25) return 'yeni';
+    if (deneyimGunu >= 25 && deneyimGunu <= 28) return 'ilkAy';
+    if (deneyimGunu > 28 && deneyimGunu < 55) return 'bekleniyor';
+    if (deneyimGunu >= 55 && deneyimGunu <= 58) return 'ikinciAy';
     return 'standart';
   };
 
   const getStatusColor = (durum: string): string => {
     switch (durum) {
+      case 'acik':
+        return '#10b981'; // Yeşil - Rapor açık, doldurulabilir
+      case 'birinci_ay_bekleniyor':
+        return '#f59e0b'; // Turuncu - 1. ay raporu önce doldurulmalı
       case 'gecikmis': return '#ef4444';
       case 'yaklasan': return '#f59e0b';
       case 'guncel': return '#10b981';
       case 'yeni': return '#3b82f6';
+      case 'henuz_baslamadi': return '#8b5cf6';
       case 'bekliyor': return '#6b7280';
       default: return '#6b7280';
     }
@@ -503,10 +586,13 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
 
   const getStatusText = (durum: string): string => {
     switch (durum) {
+      case 'acik': return 'Rapor Açık';
+      case 'birinci_ay_bekleniyor': return '1. Ay Raporu Bekleniyor';
       case 'gecikmis': return 'Gecikmiş';
       case 'yaklasan': return 'Yaklaşan';
       case 'guncel': return 'Güncel';
       case 'yeni': return 'Yeni';
+      case 'henuz_baslamadi': return 'Henüz Başlamadı';
       case 'bekliyor': return 'Bekliyor';
       default: return 'Bilinmiyor';
     }
@@ -552,33 +638,223 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
   const handlePersonelClick = (personel: Personel) => {
     setSelectedPersonel(personel);
     
-    // Rapor tipini belirle
-    const deneyimGunu = Math.floor((new Date().getTime() - new Date(personel.iseBaslamaTarihi).getTime()) / (1000 * 60 * 60 * 24));
+    // Rapor tipini belirle - İşe başlama tarihinden bugüne kadar geçen gün sayısı
+    const iseBaslamaTarihi = new Date(personel.iseBaslamaTarihi);
+    const bugun = new Date();
+    const deneyimGunu = Math.floor((bugun.getTime() - iseBaslamaTarihi.getTime()) / (1000 * 60 * 60 * 24));
     
-    if (deneyimGunu >= 30 && deneyimGunu < 60) {
-      // 1. ay raporu
+    console.log(`
+      🔍 Rapor Tipi Belirleme:
+      Personel: ${personel.ad} ${personel.soyad}
+      İşe Başlama: ${personel.iseBaslamaTarihi}
+      Bugün: ${bugun.toISOString().split('T')[0]}
+      Çalışma Günü: ${deneyimGunu} gün
+      1. Ay Rapor Durumu: ${personel.ilkAyRaporDurumu}
+      2. Ay Rapor Durumu: ${personel.ikinciAyRaporDurumu}
+      5. Ay Rapor Durumu: ${personel.besinciAyRaporDurumu}
+    `);
+    
+    // Henüz rapor zamanı gelmedi
+    if (deneyimGunu < 25) {
+      alert(`ℹ️ ${personel.ad} ${personel.soyad} henüz yeni personel. 1. ay raporu için ${25 - deneyimGunu} gün kaldı.`);
+      return;
+    }
+    
+    // 1. AY RAPORU: 25. günden itibaren açık (25-28 gün açık, 29+ gün gecikmiş ama hala doldurulabilir)
+    if (deneyimGunu >= 25 && personel.ilkAyRaporDurumu !== 'tamamlandi') {
+      const durum = deneyimGunu <= 28 ? 'açık' : 'gecikmiş';
+      const kalanGun = 28 - deneyimGunu;
+      
+      console.log(`✅ 1. AY RAPORU açılıyor (${deneyimGunu}. gün - ${durum})`);
       setIlkAyRaporForm(prev => ({
         ...prev,
         personelId: personel.id,
         tarih: new Date().toISOString().split('T')[0]
       }));
       setIlkAyRaporModalOpen(true);
-    } else if (deneyimGunu >= 60 && deneyimGunu < 90) {
-      // 2. ay raporu
+      
+      // Uyarı mesajları
+      if (deneyimGunu > 28) {
+        alert(`⚠️ 1. Ay Raporu GECİKMİŞ!\n\nRapor doldurma süresi ${deneyimGunu - 28} gün önce dolmuştur.\nLütfen hemen doldurunuz!`);
+      } else if (kalanGun <= 1) {
+        alert(`🔴 1. Ay Raporu: SON GÜN! Bugün bu raporu doldurmanız gerekmektedir!`);
+      } else if (kalanGun <= 2) {
+        alert(`⚠️ 1. Ay Raporu: ${kalanGun} gün kaldı! Lütfen en kısa sürede doldurunuz.`);
+      }
+      return;
+    }
+    
+    // 2. AY RAPORU: 55. günden itibaren açık AMA 1. ay raporu doldurulmuşsa (55-58 gün açık, 59+ gün gecikmiş)
+    if (deneyimGunu >= 55 && personel.ikinciAyRaporDurumu !== 'tamamlandi') {
+      // Önce 1. ay raporu kontrolü
+      if (personel.ilkAyRaporDurumu !== 'tamamlandi') {
+        alert(`❌ 2. Ay raporu için önce 1. Ay raporunu doldurmanız gerekmektedir!\n\n1. Ay raporunu doldurmak için personele tıklayın.`);
+        return;
+      }
+      
+      // 1. ay doldurulmuş, 2. ay açık
+      const durum = deneyimGunu <= 58 ? 'açık' : 'gecikmiş';
+      const kalanGun = 58 - deneyimGunu;
+      
+      console.log(`✅ 2. AY RAPORU açılıyor (${deneyimGunu}. gün - ${durum})`);
       setIkinciAyRaporForm(prev => ({
         ...prev,
         personelId: personel.id,
         tarih: new Date().toISOString().split('T')[0]
       }));
       setIkinciAyRaporModalOpen(true);
-    } else {
-      // Standart rapor (90+ gün)
+      
+      // Uyarı mesajları
+      if (deneyimGunu > 58) {
+        alert(`⚠️ 2. Ay Raporu GECİKMİŞ!\n\nRapor doldurma süresi ${deneyimGunu - 58} gün önce dolmuştur.\nLütfen hemen doldurunuz!`);
+      } else if (kalanGun <= 1) {
+        alert(`🔴 2. Ay Raporu: SON GÜN! Bugün bu raporu doldurmanız gerekmektedir!`);
+      } else if (kalanGun <= 2) {
+        alert(`⚠️ 2. Ay Raporu: ${kalanGun} gün kaldı! Lütfen en kısa sürede doldurunuz.`);
+      }
+      return;
+    }
+    
+    // 5. AY RAPORU: 140. günden itibaren açık AMA 1. ve 2. ay raporları doldurulmuşsa (140-145 gün açık, 146+ gün gecikmiş)
+    if (deneyimGunu >= 140 && personel.besinciAyRaporDurumu !== 'tamamlandi') {
+      // Önce 1. ve 2. ay raporu kontrolü
+      if (personel.ilkAyRaporDurumu !== 'tamamlandi' || personel.ikinciAyRaporDurumu !== 'tamamlandi') {
+        alert(`❌ 5. Ay raporu için önce 1. ve 2. Ay raporlarını doldurmanız gerekmektedir!\n\nLütfen önce önceki raporları tamamlayın.`);
+        return;
+      }
+      
+      // Önceki raporlar doldurulmuş, 5. ay açık
+      const durum = deneyimGunu <= 145 ? 'açık' : 'gecikmiş';
+      const kalanGun = 145 - deneyimGunu;
+      
+      console.log(`✅ 5. AY RAPORU açılıyor (${deneyimGunu}. gün - ${durum})`);
+      setBesinciAyRaporForm(prev => ({
+        ...prev,
+        personelId: personel.id,
+        tarih: new Date().toISOString().split('T')[0]
+      }));
+      setBesinciAyRaporModalOpen(true);
+      
+      // Uyarı mesajları
+      if (deneyimGunu > 145) {
+        alert(`⚠️ 5. Ay Raporu GECİKMİŞ!\n\nRapor doldurma süresi ${deneyimGunu - 145} gün önce dolmuştur.\nLütfen hemen doldurunuz!`);
+      } else if (kalanGun <= 1) {
+        alert(`🔴 5. Ay Raporu: SON GÜN! Bugün bu raporu doldurmanız gerekmektedir!`);
+      } else if (kalanGun <= 3) {
+        alert(`⚠️ 5. Ay Raporu: ${kalanGun} gün kaldı! Lütfen en kısa sürede doldurunuz.`);
+      }
+      return;
+    }
+    
+    // 1. ve 2. ay arası bekleme süresi
+    if (deneyimGunu >= 29 && deneyimGunu < 55 && personel.ilkAyRaporDurumu === 'tamamlandi') {
+      alert(`ℹ️ 1. Ay raporu tamamlandı. 2. Ay raporu için ${55 - deneyimGunu} gün kaldı.\n\n📅 2. ay raporu 55. günde açılacak (5. ayın dolmasına 10 gün kala)`);
+      return;
+    }
+    
+    // 2. ve 5. ay arası bekleme süresi
+    if (deneyimGunu >= 59 && deneyimGunu < 140 && personel.ikinciAyRaporDurumu === 'tamamlandi') {
+      alert(`ℹ️ 2. Ay raporu tamamlandı. 5. Ay raporu için ${140 - deneyimGunu} gün kaldı.\n\n📅 5. ay raporu 140. günde açılacak (5. ayın dolmasına 10 gün kala)`);
+      return;
+    }
+    
+    // 5. ay ve 6 aylık arası bekleme süresi
+    if (deneyimGunu >= 146 && deneyimGunu < 180 && personel.besinciAyRaporDurumu === 'tamamlandi') {
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth();
+      const currentDay = currentDate.getDate();
+      
+      let siradakiDonem: string;
+      if (currentMonth === 0 && currentDay < 21) {
+        siradakiDonem = 'Ocak (21 Ocak\'tan itibaren)';
+      } else if (currentMonth < 7) {
+        siradakiDonem = 'Ağustos (21 Ağustos\'tan itibaren)';
+      } else if (currentMonth === 7 && currentDay < 21) {
+        siradakiDonem = 'Ağustos (21 Ağustos\'tan itibaren)';
+      } else {
+        siradakiDonem = 'Ocak (21 Ocak\'tan itibaren)';
+      }
+      
+      alert(`ℹ️ 5. Ay raporu tamamlandı. 6 Aylık Performans Raporu için ${180 - deneyimGunu} gün kaldı.\n\n📅 6 aylık rapor her ayın son 10 gününde açılır.\nSıradaki dönem: ${siradakiDonem}`);
+      return;
+    }
+    
+    // 6 Aylık Performans Raporu (180+ gün ve önceki raporlar tamamlandıysa)
+    // Her 6 ayda bir tekrar eder (Ocak ve Ağustos'un son 10 günü)
+    if (deneyimGunu >= 180) {
+      // İlk rapor için: Önceki raporların kontrolü
+      if (personel.ilkAyRaporDurumu !== 'tamamlandi') {
+        alert(`❌ 6 Aylık Performans Raporu için önce 1. Ay raporunu doldurmanız gerekmektedir!`);
+        return;
+      }
+      if (personel.ikinciAyRaporDurumu !== 'tamamlandi') {
+        alert(`❌ 6 Aylık Performans Raporu için önce 2. Ay raporunu doldurmanız gerekmektedir!`);
+        return;
+      }
+      if (personel.besinciAyRaporDurumu !== 'tamamlandi') {
+        alert(`❌ 6 Aylık Performans Raporu için önce 1., 2. ve 5. Ay raporlarını doldurmanız gerekmektedir!`);
+        return;
+      }
+      
+      // Şu anki ay ve gün kontrolü - Her ayın 21'inden itibaren o ayın raporu açılır (10 gün önceden)
       const currentDate = new Date();
       const currentMonth = currentDate.getMonth(); // 0-11 arası
+      const currentDay = currentDate.getDate(); // 1-31 arası
       const currentYear = currentDate.getFullYear();
       
-      // Ocak (0) veya Ağustos (7) ayında mı kontrol et
-      const raporDonemi = (currentMonth === 0) ? 'Ocak' : 'Ağustos';
+      let isRaporAcik = false;
+      let raporDonemi: 'Ocak' | 'Ağustos' = 'Ocak'; // Default değer
+      
+      // Ocak raporu: Ocak 21-31 (son 10 gün)
+      if (currentMonth === 0 && currentDay >= 21) {
+        raporDonemi = 'Ocak';
+        isRaporAcik = true;
+      }
+      // Ağustos raporu: Ağustos 21-31 (son 10 gün)
+      else if (currentMonth === 7 && currentDay >= 21) {
+        raporDonemi = 'Ağustos';
+        isRaporAcik = true;
+      }
+      // Şu anki dönemi belirle (rapor açık olmasa bile)
+      else {
+        // Şu an hangi döneme daha yakınız?
+        if (currentMonth < 7) {
+          raporDonemi = 'Ağustos'; // Sonraki dönem Ağustos
+        } else {
+          raporDonemi = 'Ocak'; // Sonraki dönem Ocak
+        }
+      }
+      
+      if (!isRaporAcik) {
+        // Sıradaki rapor dönemini hesapla
+        let siradakiDonem: string;
+        if (currentMonth === 0 && currentDay < 21) {
+          siradakiDonem = 'Ocak (21 Ocak\'tan itibaren)';
+        } else if (currentMonth < 7) {
+          siradakiDonem = 'Ağustos (21 Ağustos\'tan itibaren)';
+        } else if (currentMonth === 7 && currentDay < 21) {
+          siradakiDonem = 'Ağustos (21 Ağustos\'tan itibaren)';
+        } else {
+          siradakiDonem = 'Ocak (21 Ocak\'tan itibaren)';
+        }
+        alert(`ℹ️ 6 Aylık Performans Raporu sadece her ayın son 10 günü doldurulabilir.\n\nSıradaki rapor dönemi: ${siradakiDonem}`);
+        return;
+      }
+      
+      // Son 6 aylık rapor tarihinden 6 ay geçti mi kontrol et
+      if (personel.sonStandartRaporTarihi) {
+        const sonRaporTarihi = new Date(personel.sonStandartRaporTarihi);
+        const ayFarki = (currentDate.getTime() - sonRaporTarihi.getTime()) / (1000 * 60 * 60 * 24 * 30); // Yaklaşık ay cinsinden
+        
+        if (ayFarki < 6) {
+          const kalanAy = Math.ceil(6 - ayFarki);
+          const siradakiDonem = raporDonemi === 'Ocak' ? 'Ağustos' : 'Ocak';
+          alert(`ℹ️ Son 6 Aylık Performans Raporu ${new Date(personel.sonStandartRaporTarihi).toLocaleDateString('tr-TR')} tarihinde dolduruldu.\n\nYeni rapor için ${kalanAy} ay daha beklemeniz gerekmektedir.\nSıradaki dönem: ${siradakiDonem}`);
+          return;
+        }
+      }
+      
+      console.log('✅ 6 AYLIK PERFORMANS RAPORU açılıyor');
       
       setStandartRaporForm(prev => ({
         ...prev,
@@ -588,7 +864,11 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
         raporYili: currentYear
       }));
       setStandartRaporModalOpen(true);
+      return;
     }
+    
+    // Hiçbir rapor zamanı gelmemişse
+    alert(`ℹ️ ${personel.ad} ${personel.soyad} için şu anda doldurulabilir bir rapor yok.\n\nRapor zamanı geldiğinde bildirim alacaksınız.`);
   };
 
   const handleRaporKaydet = async () => {
@@ -642,12 +922,35 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
 
   const handleIlkAyRaporKaydet = async () => {
     try {
+      // Validasyon kontrolleri
+      if (!ilkAyRaporForm.denemeSuresiDegerlendirmesi || ilkAyRaporForm.denemeSuresiDegerlendirmesi.trim() === '') {
+        alert('Lütfen "Deneme süresi değerlendirmesi" alanını doldurunuz!');
+        return;
+      }
+      if (!ilkAyRaporForm.olumluIlenimler || ilkAyRaporForm.olumluIlenimler.trim() === '') {
+        alert('Lütfen "Olumlu izlenimler" alanını doldurunuz!');
+        return;
+      }
+      if (!ilkAyRaporForm.olumsuzIlenimler || ilkAyRaporForm.olumsuzIlenimler.trim() === '') {
+        alert('Lütfen "Olumsuz izlenimler" alanını doldurunuz!');
+        return;
+      }
+      if (!ilkAyRaporForm.devamEtmeKarari || ilkAyRaporForm.devamEtmeKarari.trim() === '') {
+        alert('Lütfen "Devam etme kararı" alanını doldurunuz!');
+        return;
+      }
+      if (!ilkAyRaporForm.soru4_puan || ilkAyRaporForm.soru4_puan < 1 || ilkAyRaporForm.soru4_puan > 5) {
+        alert('Lütfen "Devam etme kararı puanı" seçiniz (1-5 arası)!');
+        return;
+      }
+      
       console.log('İlk ay raporu kaydediliyor:', ilkAyRaporForm);
       
       const response = await fetch('http://localhost:3001/api/ilk-ay-raporu', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...authService.getAuthHeader()
         },
         body: JSON.stringify({
           personelId: ilkAyRaporForm.personelId,
@@ -710,12 +1013,35 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
 
   const handleIkinciAyRaporKaydet = async () => {
     try {
+      // Validasyon kontrolleri
+      if (!ikinciAyRaporForm.denemeSuresiDegerlendirmesi || ikinciAyRaporForm.denemeSuresiDegerlendirmesi.trim() === '') {
+        alert('Lütfen "Deneme süresi değerlendirmesi" alanını doldurunuz!');
+        return;
+      }
+      if (!ikinciAyRaporForm.olumluIlenimler || ikinciAyRaporForm.olumluIlenimler.trim() === '') {
+        alert('Lütfen "Olumlu izlenimler" alanını doldurunuz!');
+        return;
+      }
+      if (!ikinciAyRaporForm.olumsuzIlenimler || ikinciAyRaporForm.olumsuzIlenimler.trim() === '') {
+        alert('Lütfen "Olumsuz izlenimler" alanını doldurunuz!');
+        return;
+      }
+      if (!ikinciAyRaporForm.devamEtmeKarari || ikinciAyRaporForm.devamEtmeKarari.trim() === '') {
+        alert('Lütfen "Devam etme kararı" alanını doldurunuz!');
+        return;
+      }
+      if (!ikinciAyRaporForm.soru4_puan || ikinciAyRaporForm.soru4_puan < 1 || ikinciAyRaporForm.soru4_puan > 5) {
+        alert('Lütfen "Devam etme kararı puanı" seçiniz (1-5 arası)!');
+        return;
+      }
+      
       console.log('İkinci ay raporu kaydediliyor:', ikinciAyRaporForm);
       
       const response = await fetch('http://localhost:3001/api/ikinci-ay-raporu', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...authService.getAuthHeader()
         },
         body: JSON.stringify({
           personelId: ikinciAyRaporForm.personelId,
@@ -758,7 +1084,82 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
 
   const handleStandartRaporKaydet = async () => {
     try {
-      console.log('Standart rapor kaydediliyor:', standartRaporForm);
+      // Validasyon kontrolleri
+      const validationErrors: string[] = [];
+      
+      if (!standartRaporForm.soru1_deger_ureten_katkilar || standartRaporForm.soru1_deger_ureten_katkilar.trim() === '') {
+        validationErrors.push('1. Değer Üreten Katkılar');
+      }
+      if (!standartRaporForm.soru1_puan || standartRaporForm.soru1_puan < 1 || standartRaporForm.soru1_puan > 5) {
+        validationErrors.push('1. Soru Puanı');
+      }
+      
+      if (!standartRaporForm.soru2_ekip_iletisim_isbirligi || standartRaporForm.soru2_ekip_iletisim_isbirligi.trim() === '') {
+        validationErrors.push('2. Ekip İletişimi ve İş Birliği');
+      }
+      if (!standartRaporForm.soru2_puan || standartRaporForm.soru2_puan < 1 || standartRaporForm.soru2_puan > 5) {
+        validationErrors.push('2. Soru Puanı');
+      }
+      
+      if (!standartRaporForm.soru3_platform_veri_girisi || standartRaporForm.soru3_platform_veri_girisi.trim() === '') {
+        validationErrors.push('3. Platform Veri Girişi');
+      }
+      if (!standartRaporForm.soru3_puan || standartRaporForm.soru3_puan < 1 || standartRaporForm.soru3_puan > 5) {
+        validationErrors.push('3. Soru Puanı');
+      }
+      
+      if (!standartRaporForm.soru4_geri_bildirim_tutumu || standartRaporForm.soru4_geri_bildirim_tutumu.trim() === '') {
+        validationErrors.push('4. Geri Bildirim Tutumu');
+      }
+      if (!standartRaporForm.soru4_puan || standartRaporForm.soru4_puan < 1 || standartRaporForm.soru4_puan > 5) {
+        validationErrors.push('4. Soru Puanı');
+      }
+      
+      if (!standartRaporForm.soru5_problem_cozme_proaktivite || standartRaporForm.soru5_problem_cozme_proaktivite.trim() === '') {
+        validationErrors.push('5. Problem Çözme Proaktivitesi');
+      }
+      if (!standartRaporForm.soru5_puan || standartRaporForm.soru5_puan < 1 || standartRaporForm.soru5_puan > 5) {
+        validationErrors.push('5. Soru Puanı');
+      }
+      
+      if (!standartRaporForm.soru6_yenilikci_yaklasim || standartRaporForm.soru6_yenilikci_yaklasim.trim() === '') {
+        validationErrors.push('6. Yenilikçi Yaklaşım');
+      }
+      if (!standartRaporForm.soru6_puan || standartRaporForm.soru6_puan < 1 || standartRaporForm.soru6_puan > 5) {
+        validationErrors.push('6. Soru Puanı');
+      }
+      
+      if (!standartRaporForm.soru7_zamaninda_tamamlamada_basarı || standartRaporForm.soru7_zamaninda_tamamlamada_basarı.trim() === '') {
+        validationErrors.push('7. Zamanında Tamamlamada Başarı');
+      }
+      if (!standartRaporForm.soru7_puan || standartRaporForm.soru7_puan < 1 || standartRaporForm.soru7_puan > 5) {
+        validationErrors.push('7. Soru Puanı');
+      }
+      
+      if (!standartRaporForm.soru8_gonullu_rol_alma_sorumluluk || standartRaporForm.soru8_gonullu_rol_alma_sorumluluk.trim() === '') {
+        validationErrors.push('8. Gönüllü Rol Alma Sorumluluk');
+      }
+      if (!standartRaporForm.soru8_puan || standartRaporForm.soru8_puan < 1 || standartRaporForm.soru8_puan > 5) {
+        validationErrors.push('8. Soru Puanı');
+      }
+      
+      if (!standartRaporForm.soru9_farkli_ekiplerle_iletisim || standartRaporForm.soru9_farkli_ekiplerle_iletisim.trim() === '') {
+        validationErrors.push('9. Farklı Ekiplerle İletişim');
+      }
+      if (!standartRaporForm.soru9_puan || standartRaporForm.soru9_puan < 1 || standartRaporForm.soru9_puan > 5) {
+        validationErrors.push('9. Soru Puanı');
+      }
+      
+      if (!standartRaporForm.genel_degerlendirme || standartRaporForm.genel_degerlendirme.trim() === '') {
+        validationErrors.push('Genel Değerlendirme');
+      }
+      
+      if (validationErrors.length > 0) {
+        alert('Lütfen aşağıdaki alanları doldurunuz:\n\n' + validationErrors.map((err, idx) => `${idx + 1}. ${err}`).join('\n'));
+        return;
+      }
+      
+      console.log('6 Aylık Performans Raporu kaydediliyor:', standartRaporForm);
       
       const response = await fetch('http://localhost:3001/api/standart-rapor', {
         method: 'POST',
@@ -797,7 +1198,7 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('Standart rapor başarıyla kaydedildi:', result);
+        console.log('6 Aylık Performans Raporu başarıyla kaydedildi:', result);
         
         setStandartRaporModalOpen(false);
         setSelectedPersonel(null);
@@ -805,13 +1206,13 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
         // Personel listesini yenile
         fetchPersonnel();
         
-        alert('Standart rapor başarıyla kaydedildi!');
+        alert('6 Aylık Performans Raporu başarıyla kaydedildi!');
       } else {
         throw new Error('Rapor kaydedilemedi');
       }
     } catch (error) {
-      console.error('Standart rapor kaydetme hatası:', error);
-      alert('Standart rapor kaydedilirken hata oluştu: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata'));
+      console.error('6 Aylık Performans Raporu kaydetme hatası:', error);
+      alert('6 Aylık Performans Raporu kaydedilirken hata oluştu: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata'));
     }
   };
 
@@ -946,6 +1347,14 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
               <span className="alert-description">Acil müdahale gerekli</span>
             </div>
           </div>
+          <div className="alert-card open">
+            <div className="alert-icon">📝</div>
+            <div className="alert-content">
+              <h3>{personeller.filter(p => p.raporDurumu === 'acik').length}</h3>
+              <p>Açık Raporlar</p>
+              <span className="alert-description">3 gün içinde doldurulmalı</span>
+            </div>
+          </div>
           <div className="alert-card warning">
             <div className="alert-icon">🟡</div>
             <div className="alert-content">
@@ -1015,69 +1424,198 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
             <p>Tüm raporlar güncel durumda</p>
           </div>
         ) : (
-          <div className="hatirlatma-grid">
-            {hatirlatmaPersoneller.map((personel, index) => (
-              <div key={index} className="hatirlatma-card">
-                <div className="hatirlatma-card-header">
-                  <div className="personel-info">
-                    <h3>{personel.ad} {personel.soyad}</h3>
-                    <span className="grup-badge">{personel.grupKodu}</span>
+          <>
+            {/* AÇIK RAPORLAR (25-28 gün veya 55-58 gün) */}
+            {(() => {
+              const acikRaporlar = hatirlatmaPersoneller.filter(p => 
+                (p.calismaGunu >= 25 && p.calismaGunu <= 28) || 
+                (p.calismaGunu >= 55 && p.calismaGunu <= 58)
+              );
+              
+              return acikRaporlar.length > 0 && (
+                <div className="hatirlatma-subsection">
+                  <div className="subsection-header">
+                    <h3>📝 Açık Raporlar ({acikRaporlar.length})</h3>
+                    <p>3 gün içinde doldurulması gereken raporlar</p>
                   </div>
-                  <div className={`rapor-type-badge ${personel.raporTipi === 'ilk_ay' ? 'ilk-ay' : 'ikinci-ay'}`}>
-                    {personel.raporTipi === 'ilk_ay' ? '1️⃣ İlk Ay' : '2️⃣ İkinci Ay'}
-                  </div>
-                </div>
-
-                <div className="hatirlatma-card-body">
-                  <div className="info-row">
-                    <span className="info-label">📊 Pozisyon:</span>
-                    <span className="info-value">{personel.pozisyon}</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">⏱️ Çalışma Süresi:</span>
-                    <span className="info-value">{personel.calismaGunu} gün</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">📅 İşe Başlama:</span>
-                    <span className="info-value">
-                      {new Date(personel.iseBaslamaTarihi).toLocaleDateString('tr-TR')}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="hatirlatma-card-footer">
-                  {personel.yoneticiler && personel.yoneticiler.length > 0 ? (
-                    <div className="yonetici-info">
-                      <span className="yonetici-label">👤 Yönetici:</span>
-                      <div className="yonetici-list">
-                        {personel.yoneticiler.map((yonetici: any, idx: number) => (
-                          <div key={idx} className="yonetici-item">
-                            <span className="yonetici-name">{yonetici.full_name}</span>
-                            <span className="yonetici-email">{yonetici.email}</span>
+                  <div className="hatirlatma-grid">
+                    {acikRaporlar.map((personel, index) => (
+                      <div key={index} className="hatirlatma-card acik">
+                        <div className="hatirlatma-card-header">
+                          <div className="personel-info">
+                            <h3>{personel.ad} {personel.soyad}</h3>
+                            <span className="grup-badge">{personel.grupKodu}</span>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="no-yonetici">
-                      <span>⚠️ Bu gruba atanmış yönetici bulunamadı</span>
-                    </div>
-                  )}
-                </div>
+                          <div className={`rapor-type-badge ${
+                            personel.raporTipi === 'ilk_ay' ? 'ilk-ay' : 
+                            personel.raporTipi === 'ikinci_ay' ? 'ikinci-ay' : 
+                            personel.raporTipi === 'besinci_ay' ? 'besinci-ay' : 'standart'
+                          }`}>
+                            {personel.raporTipi === 'ilk_ay' ? '1️⃣ 1. Ay' : 
+                             personel.raporTipi === 'ikinci_ay' ? '2️⃣ 2. Ay' : 
+                             personel.raporTipi === 'besinci_ay' ? '5️⃣ 5. Ay' : '📋 6 Aylık'}
+                          </div>
+                        </div>
 
-                <div className="hatirlatma-card-actions">
-                  <button
-                    className="btn-send-single"
-                    onClick={() => handleMailGonder([personel])}
-                    disabled={mailGonderiyor || !personel.yoneticiler || personel.yoneticiler.length === 0}
-                    title="Bu personel için mail gönder"
-                  >
-                    📧 Mail Gönder
-                  </button>
+                        <div className="hatirlatma-card-body">
+                          <div className="info-row">
+                            <span className="info-label">📊 Pozisyon:</span>
+                            <span className="info-value">{personel.pozisyon}</span>
+                          </div>
+                          <div className="info-row">
+                            <span className="info-label">⏱️ Çalışma Süresi:</span>
+                            <span className="info-value acik-gun">{personel.calismaGunu} gün</span>
+                          </div>
+                          <div className="info-row">
+                            <span className="info-label">📅 İşe Başlama:</span>
+                            <span className="info-value">
+                              {new Date(personel.iseBaslamaTarihi).toLocaleDateString('tr-TR')}
+                            </span>
+                          </div>
+                          <div className="info-row kalan-sure">
+                            <span className="info-label">⏰ Kalan Süre:</span>
+                            <span className="info-value kalan-gun">
+                              {personel.raporTipi === 'ilk_ay' 
+                                ? `${28 - personel.calismaGunu} gün` 
+                                : personel.raporTipi === 'ikinci_ay'
+                                ? `${58 - personel.calismaGunu} gün`
+                                : `${145 - personel.calismaGunu} gün`}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="hatirlatma-card-footer">
+                          {personel.yoneticiler && personel.yoneticiler.length > 0 ? (
+                            <div className="yonetici-info">
+                              <span className="yonetici-label">👤 Yönetici:</span>
+                              <div className="yonetici-list">
+                                {personel.yoneticiler.map((yonetici: any, idx: number) => (
+                                  <div key={idx} className="yonetici-item">
+                                    <span className="yonetici-name">{yonetici.full_name}</span>
+                                    <span className="yonetici-email">{yonetici.email}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="no-yonetici">
+                              <span>⚠️ Bu gruba atanmış yönetici bulunamadı</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="hatirlatma-card-actions">
+                          <button
+                            className="btn-send-single"
+                            onClick={() => handleMailGonder([personel])}
+                            disabled={mailGonderiyor || !personel.yoneticiler || personel.yoneticiler.length === 0}
+                            title="Bu personel için mail gönder"
+                          >
+                            📧 Mail Gönder
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              );
+            })()}
+
+            {/* GECİKMİŞ RAPORLAR (29+ gün veya 59+ gün) */}
+            {(() => {
+              const gecikmisRaporlar = hatirlatmaPersoneller.filter(p => 
+                p.calismaGunu > 28 || p.calismaGunu > 58 || p.calismaGunu > 145
+              );
+              
+              return gecikmisRaporlar.length > 0 && (
+                <div className="hatirlatma-subsection">
+                  <div className="subsection-header gecikmis">
+                    <h3>🔴 Gecikmiş Raporlar ({gecikmisRaporlar.length})</h3>
+                    <p>Süresi geçmiş, acil doldurulması gereken raporlar</p>
+                  </div>
+                  <div className="hatirlatma-grid">
+                    {gecikmisRaporlar.map((personel, index) => (
+                      <div key={index} className="hatirlatma-card gecikmis">
+                        <div className="hatirlatma-card-header">
+                          <div className="personel-info">
+                            <h3>{personel.ad} {personel.soyad}</h3>
+                            <span className="grup-badge">{personel.grupKodu}</span>
+                          </div>
+                          <div className={`rapor-type-badge ${
+                            personel.raporTipi === 'ilk_ay' ? 'ilk-ay' : 
+                            personel.raporTipi === 'ikinci_ay' ? 'ikinci-ay' : 
+                            personel.raporTipi === 'besinci_ay' ? 'besinci-ay' : 'standart'
+                          }`}>
+                            {personel.raporTipi === 'ilk_ay' ? '1️⃣ 1. Ay' : 
+                             personel.raporTipi === 'ikinci_ay' ? '2️⃣ 2. Ay' : 
+                             personel.raporTipi === 'besinci_ay' ? '5️⃣ 5. Ay' : '📋 6 Aylık'}
+                          </div>
+                        </div>
+
+                        <div className="hatirlatma-card-body">
+                          <div className="info-row">
+                            <span className="info-label">📊 Pozisyon:</span>
+                            <span className="info-value">{personel.pozisyon}</span>
+                          </div>
+                          <div className="info-row">
+                            <span className="info-label">⏱️ Çalışma Süresi:</span>
+                            <span className="info-value gecikmis-gun">{personel.calismaGunu} gün</span>
+                          </div>
+                          <div className="info-row">
+                            <span className="info-label">📅 İşe Başlama:</span>
+                            <span className="info-value">
+                              {new Date(personel.iseBaslamaTarihi).toLocaleDateString('tr-TR')}
+                            </span>
+                          </div>
+                          <div className="info-row gecikme-suresi">
+                            <span className="info-label">⚠️ Gecikme:</span>
+                            <span className="info-value gecikme-gun">
+                              {personel.raporTipi === 'ilk_ay' 
+                                ? `${personel.calismaGunu - 28} gün` 
+                                : personel.raporTipi === 'ikinci_ay'
+                                ? `${personel.calismaGunu - 58} gün`
+                                : `${personel.calismaGunu - 145} gün`}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="hatirlatma-card-footer">
+                          {personel.yoneticiler && personel.yoneticiler.length > 0 ? (
+                            <div className="yonetici-info">
+                              <span className="yonetici-label">👤 Yönetici:</span>
+                              <div className="yonetici-list">
+                                {personel.yoneticiler.map((yonetici: any, idx: number) => (
+                                  <div key={idx} className="yonetici-item">
+                                    <span className="yonetici-name">{yonetici.full_name}</span>
+                                    <span className="yonetici-email">{yonetici.email}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="no-yonetici">
+                              <span>⚠️ Bu gruba atanmış yönetici bulunamadı</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="hatirlatma-card-actions">
+                          <button
+                            className="btn-send-single"
+                            onClick={() => handleMailGonder([personel])}
+                            disabled={mailGonderiyor || !personel.yoneticiler || personel.yoneticiler.length === 0}
+                            title="Bu personel için mail gönder"
+                          >
+                            📧 Mail Gönder
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </>
         )}
       </div>
 
@@ -1132,7 +1670,9 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
               
               {isExpanded && (
                 <div className="personel-grid">
-                  {grup.personeller.map((personel) => (
+                  {grup.personeller
+                    .filter(personel => personel.raporDurumu !== 'henuz_baslamadi')
+                    .map((personel) => (
                     <div 
                       key={personel.id} 
                       className={`personel-card ${personel.raporDurumu}`}
@@ -1478,12 +2018,12 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
         </div>
       )}
 
-      {/* Standart Rapor Modal */}
+      {/* 6 Aylık Performans Raporu Modal */}
       {standartRaporModalOpen && selectedPersonel && (
         <div className="modal-overlay" onClick={() => setStandartRaporModalOpen(false)}>
           <div className="rapor-modal standart-rapor-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{selectedPersonel.ad} {selectedPersonel.soyad} - Standart Rapor ({standartRaporForm.raporDonemi} {standartRaporForm.raporYili})</h2>
+              <h2>{selectedPersonel.ad} {selectedPersonel.soyad} - 6 Aylık Performans Raporu ({standartRaporForm.raporDonemi} {standartRaporForm.raporYili})</h2>
               <button 
                 className="modal-close"
                 onClick={() => setStandartRaporModalOpen(false)}
@@ -1493,7 +2033,7 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
             </div>
 
             <div className="modal-content">
-              {/* Standart Rapor Soruları */}
+              {/* 6 Aylık Performans Raporu Soruları */}
               <div className="standart-rapor-section">
                 <h3>6 Aylık Değerlendirme</h3>
                 
@@ -1771,7 +2311,7 @@ const Faz4Page: React.FC<Faz4PageProps> = ({ onNavigate }) => {
                 className="btn btn-primary"
                 onClick={handleStandartRaporKaydet}
               >
-                Standart Raporu Kaydet
+                6 Aylık Performans Raporunu Kaydet
               </button>
             </div>
           </div>

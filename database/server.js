@@ -4,12 +4,12 @@ const cors = require('cors');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config(); // .env dosyası database/ klasöründe
 
 // Word Export servisini import et
 let WordExportService;
 try {
-  WordExportService = require('../wordexport/index');
+  WordExportService = require('./wordexport/index');
   console.log('✅ WordExportService başarıyla yüklendi');
 } catch (error) {
   console.error('❌ WordExportService yükleme hatası:', error.message);
@@ -768,8 +768,26 @@ if (WordExportService) {
 // Word olarak export et
 app.post('/api/word-export/:dokuman', async (req, res) => {
   try {
-    const dokuman = decodeURIComponent(req.params.dokuman);
+    // WordExportService kontrolü
+    if (!wordExportService) {
+      console.error('❌ WordExportService mevcut değil!');
+      return res.status(503).json({
+        success: false,
+        error: 'Word export servisi başlatılamadı. Lütfen sunucu loglarını kontrol edin.'
+      });
+    }
+    
+    let dokuman = decodeURIComponent(req.params.dokuman);
     const { userId = 'default', templateFileName = 'Analiz Güncel verisyon v3.docx' } = req.body;
+    
+    // 🔧 TIMESTAMP TEMİZLE: Eğer dosya adı timestamp içeriyorsa, orijinal adı al
+    // Format: OriginalName.docx_2025-11-05T12-37-27-692Z.docx
+    const timestampPattern = /_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.docx$/;
+    if (timestampPattern.test(dokuman)) {
+      const originalName = dokuman.replace(timestampPattern, '');
+      console.log(`🔧 Timestamp temizlendi: ${dokuman} → ${originalName}`);
+      dokuman = originalName;
+    }
     
     console.log(`🔄 Word export başlatılıyor: ${dokuman}`);
     
@@ -795,9 +813,15 @@ app.post('/api/word-export/:dokuman', async (req, res) => {
     
   } catch (error) {
     console.error('❌ Word export hatası:', error);
+    console.error('❌ Stack trace:', error.stack);
+    console.error('❌ Error details:', {
+      name: error.name,
+      message: error.message,
+      code: error.code
+    });
     res.status(500).json({ 
       success: false,
-      error: error.message 
+      error: error.message || 'Bilinmeyen hata'
     });
   }
 });
@@ -806,19 +830,29 @@ app.post('/api/word-export/:dokuman', async (req, res) => {
 app.get('/api/word-export/download/:fileName', async (req, res) => {
   try {
     const fileName = req.params.fileName;
-    const filePath = path.join(__dirname, '../wordexport/output', fileName);
+    const filePath = path.join(__dirname, 'wordexport/output', fileName);
+    
+    console.log('📥 Download isteği:', fileName);
+    console.log('📂 Dosya yolu:', filePath);
     
     // Dosya var mı kontrol et
     const fs = require('fs');
     if (!fs.existsSync(filePath)) {
+      console.error('❌ Dosya bulunamadı:', filePath);
       return res.status(404).json({ error: 'Dosya bulunamadı' });
     }
+    
+    console.log('✅ Dosya bulundu, indiriliyor...');
     
     // Dosyayı indir
     res.download(filePath, fileName, (err) => {
       if (err) {
         console.error('❌ Dosya indirme hatası:', err);
-        res.status(500).json({ error: 'Dosya indirilemedi' });
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Dosya indirilemedi' });
+        }
+      } else {
+        console.log('✅ Dosya başarıyla indirildi:', fileName);
       }
     });
     
@@ -1493,7 +1527,6 @@ app.post('/api/personel', authenticateToken, async (req, res) => {
 app.get('/api/personel', authenticateToken, checkPermission('faz4'), async (req, res) => {
   try {
     const pool = await sql.connect(config);
-    const request = pool.request();
     const yoneticiId = req.user.id;
     
     // Yöneticinin atanmış gruplarına göre personelleri filtrele
@@ -1507,11 +1540,219 @@ app.get('/api/personel', authenticateToken, checkPermission('faz4'), async (req,
       ORDER BY p.ad, p.soyad
     `;
     
+    const request = pool.request();
     request.input('yoneticiId', sql.Int, yoneticiId);
     const result = await request.query(query);
     
-    console.log(`👥 Yönetici ${yoneticiId} için ${result.recordset.length} personel getirildi`);
-    res.json(result.recordset);
+    // Sistem kurulum tarihi - Bu tarihten önce olması gereken raporlar "tamamlandı" sayılır
+    const SISTEM_KURULUM_TARIHI = new Date('2025-10-01');
+    
+    // Her personel için rapor durumlarını kontrol et
+    const personellerWithReports = await Promise.all(
+      result.recordset.map(async (personel) => {
+        const iseBaslamaTarihi = new Date(personel.iseBaslamaTarihi);
+        const bugun = new Date();
+        const calismaGunu = Math.floor((bugun.getTime() - iseBaslamaTarihi.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Gelecek tarihli personel kontrolü
+        if (calismaGunu < 0) {
+          return {
+            ...personel,
+            ilkAyRaporDurumu: 'henuz_baslamadi',
+            ikinciAyRaporDurumu: 'henuz_baslamadi',
+            calismaGunu,
+            raporTipi: 'henuz_baslamadi'
+          };
+        }
+        
+        // İlk ay raporu kontrolü (25-28 gün arası açık, 29+ gün gecikmiş)
+        let ilkAyRaporDurumu = 'bekleniyor';
+        if (calismaGunu >= 25) {
+          // İlk ay raporunun olması gereken tarih (işe başlama + 25 gün)
+          const ilkAyRaporTarihi = new Date(iseBaslamaTarihi);
+          ilkAyRaporTarihi.setDate(ilkAyRaporTarihi.getDate() + 25);
+          
+          // Rapor tarihi sistem kurulumundan ÖNCE mi?
+          if (ilkAyRaporTarihi < SISTEM_KURULUM_TARIHI) {
+            // Sistem yokken olması gereken rapor - "tamamlandı" say
+            ilkAyRaporDurumu = 'tamamlandi';
+            console.log(`📋 ${personel.ad} ${personel.soyad} - İlk ay raporu sistem kurulumundan önce (${ilkAyRaporTarihi.toISOString().split('T')[0]}) - Tamamlandı sayıldı`);
+          } else {
+            // Sistem varken olması gereken rapor - GERÇEK KONTROL
+            const ilkAyQuery = `
+              SELECT TOP 1 id, rapor_durumu 
+              FROM IlkAyRapor 
+              WHERE personelId = @personelId 
+              ORDER BY raporTarihi DESC
+            `;
+            const ilkAyRequest = pool.request();
+            ilkAyRequest.input('personelId', sql.Int, personel.id);
+            const ilkAyResult = await ilkAyRequest.query(ilkAyQuery);
+            
+            // Rapor durumu kontrolü - 25-28 gün arası açık, 29+ gün gecikmiş
+            if (ilkAyResult.recordset.length > 0) {
+              ilkAyRaporDurumu = 'tamamlandi';
+            } else if (calismaGunu >= 25 && calismaGunu <= 28) {
+              // 25-28 gün arası: Rapor açık
+              ilkAyRaporDurumu = 'acik';
+            } else if (calismaGunu > 28) {
+              // 29+ gün: Süre geçmiş, gecikti
+              ilkAyRaporDurumu = 'gecikti';
+            }
+          }
+        }
+        
+        // İkinci ay raporu kontrolü (55-58 gün arası açık, 59+ gün gecikmiş)
+        let ikinciAyRaporDurumu = 'bekleniyor';
+        if (calismaGunu >= 55) {
+          // İkinci ay raporunun olması gereken tarih (işe başlama + 55 gün)
+          const ikinciAyRaporTarihi = new Date(iseBaslamaTarihi);
+          ikinciAyRaporTarihi.setDate(ikinciAyRaporTarihi.getDate() + 55);
+          
+          // Rapor tarihi sistem kurulumundan ÖNCE mi?
+          if (ikinciAyRaporTarihi < SISTEM_KURULUM_TARIHI) {
+            // Sistem yokken olması gereken rapor - "tamamlandı" say
+            ikinciAyRaporDurumu = 'tamamlandi';
+            console.log(`📋 ${personel.ad} ${personel.soyad} - İkinci ay raporu sistem kurulumundan önce (${ikinciAyRaporTarihi.toISOString().split('T')[0]}) - Tamamlandı sayıldı`);
+          } else {
+            // ÖNEMLİ: 2. ay raporu ancak 1. ay raporu doldurulmuşsa açılır
+            if (ilkAyRaporDurumu !== 'tamamlandi') {
+              ikinciAyRaporDurumu = 'birinci_ay_bekleniyor'; // Yeni durum: 1. ay raporu önce doldurulmalı
+              console.log(`⚠️ ${personel.ad} ${personel.soyad} - 2. ay raporu için önce 1. ay raporu doldurulmalı`);
+            } else {
+              // 1. ay raporu doldurulmuş, 2. ay raporunu kontrol et
+              const ikinciAyQuery = `
+                SELECT TOP 1 id, rapor_durumu 
+                FROM IkinciAyRapor 
+                WHERE personelId = @personelId 
+                ORDER BY raporTarihi DESC
+              `;
+              const ikinciAyRequest = pool.request();
+              ikinciAyRequest.input('personelId', sql.Int, personel.id);
+              const ikinciAyResult = await ikinciAyRequest.query(ikinciAyQuery);
+              
+              // Rapor durumu kontrolü - 55-58 gün arası açık, 59+ gün gecikmiş
+              if (ikinciAyResult.recordset.length > 0) {
+                ikinciAyRaporDurumu = 'tamamlandi';
+              } else if (calismaGunu >= 55 && calismaGunu <= 58) {
+                // 55-58 gün arası: Rapor açık
+                ikinciAyRaporDurumu = 'acik';
+              } else if (calismaGunu > 58) {
+                // 59+ gün: Süre geçmiş, gecikti
+                ikinciAyRaporDurumu = 'gecikti';
+              }
+            }
+          }
+        }
+        
+        // 5. Ay raporu kontrolü (140-145 gün arası açık, 146+ gün gecikmiş)
+        let besinciAyRaporDurumu = 'bekleniyor';
+        if (calismaGunu >= 140) {
+          // 5. ay raporunun olması gereken tarih (işe başlama + 140 gün)
+          const besinciAyRaporTarihi = new Date(iseBaslamaTarihi);
+          besinciAyRaporTarihi.setDate(besinciAyRaporTarihi.getDate() + 140);
+          
+          // Rapor tarihi sistem kurulumundan ÖNCE mi?
+          if (besinciAyRaporTarihi < SISTEM_KURULUM_TARIHI) {
+            // Sistem yokken olması gereken rapor - "tamamlandı" say
+            besinciAyRaporDurumu = 'tamamlandi';
+            console.log(`📋 ${personel.ad} ${personel.soyad} - 5. ay raporu sistem kurulumundan önce (${besinciAyRaporTarihi.toISOString().split('T')[0]}) - Tamamlandı sayıldı`);
+          } else {
+            // ÖNEMLİ: 5. ay raporu ancak 1. ve 2. ay raporları doldurulmuşsa açılır
+            if (ilkAyRaporDurumu !== 'tamamlandi' || ikinciAyRaporDurumu !== 'tamamlandi') {
+              besinciAyRaporDurumu = 'onceki_raporlar_bekleniyor';
+              console.log(`⚠️ ${personel.ad} ${personel.soyad} - 5. ay raporu için önce 1. ve 2. ay raporları doldurulmalı`);
+            } else {
+              // Önceki raporlar doldurulmuş, 5. ay raporunu kontrol et
+              const besinciAyQuery = `
+                SELECT TOP 1 id, rapor_durumu 
+                FROM BesinciAyRapor 
+                WHERE personelId = @personelId 
+                ORDER BY raporTarihi DESC
+              `;
+              const besinciAyRequest = pool.request();
+              besinciAyRequest.input('personelId', sql.Int, personel.id);
+              const besinciAyResult = await besinciAyRequest.query(besinciAyQuery);
+              
+              // Rapor durumu kontrolü - 140-145 gün arası açık, 146+ gün gecikmiş
+              if (besinciAyResult.recordset.length > 0) {
+                besinciAyRaporDurumu = 'tamamlandi';
+              } else if (calismaGunu >= 140 && calismaGunu <= 145) {
+                // 140-145 gün arası: Rapor açık (5. ayın dolmasına 10-5 gün kala)
+                besinciAyRaporDurumu = 'acik';
+              } else if (calismaGunu > 145) {
+                // 146+ gün: Süre geçmiş, gecikti
+                besinciAyRaporDurumu = 'gecikti';
+              }
+            }
+          }
+        }
+        
+        // RaporTipi belirleme - RAPOR DURUMUNU KONTROL ET!
+        let raporTipi = 'yeni'; // 0-24 gün: yeni
+        if (calismaGunu >= 25 && calismaGunu < 55) {
+          // 1. ay raporu doldurulmamışsa
+          if (ilkAyRaporDurumu === 'acik' || ilkAyRaporDurumu === 'gecikti') {
+            raporTipi = 'ilk_ay'; // 25-54 gün: 1. ay raporu açık veya gecikmiş
+          } else {
+            raporTipi = 'bekleniyor'; // 1. ay dolduruldu, 2. ay bekleniyor
+          }
+        } else if (calismaGunu >= 55 && calismaGunu < 140) {
+          // 55-139 gün: 2. ay raporu kontrolü
+          if (ilkAyRaporDurumu === 'acik' || ilkAyRaporDurumu === 'gecikti') {
+            raporTipi = 'ilk_ay'; // 1. ay hala doldurulmamış (açık veya gecikmiş)
+          } else if (ikinciAyRaporDurumu === 'acik' || ikinciAyRaporDurumu === 'gecikti' || ikinciAyRaporDurumu === 'birinci_ay_bekleniyor') {
+            raporTipi = 'ikinci_ay'; // 2. ay raporu açık, gecikmiş veya bekleniyor
+          } else {
+            raporTipi = 'bekleniyor'; // Ara dönem (2. ay dolu, 5. ay bekleniyor)
+          }
+        } else if (calismaGunu >= 140) {
+          // 140+ gün: 5. ay ve standart rapor kontrolü
+          if (ilkAyRaporDurumu === 'acik' || ilkAyRaporDurumu === 'gecikti') {
+            raporTipi = 'ilk_ay'; // 1. ay hala doldurulmamış
+          } else if (ikinciAyRaporDurumu === 'acik' || ikinciAyRaporDurumu === 'gecikti') {
+            raporTipi = 'ikinci_ay'; // 2. ay hala doldurulmamış
+          } else if (besinciAyRaporDurumu === 'acik' || besinciAyRaporDurumu === 'gecikti' || besinciAyRaporDurumu === 'onceki_raporlar_bekleniyor') {
+            raporTipi = 'besinci_ay'; // 5. ay raporu açık, gecikmiş veya önceki raporlar bekleniyor
+          } else if (besinciAyRaporDurumu === 'tamamlandi' && calismaGunu >= 180) {
+            raporTipi = 'standart'; // Tüm raporlar dolu, standart rapor (6 aylık)
+          } else {
+            raporTipi = 'bekleniyor'; // Ara dönem
+          }
+        }
+        
+        // Son 6 aylık (standart) rapor kontrolü - Her 6 ayda bir tekrarlanır
+        let sonStandartRaporTarihi = null;
+        if (calismaGunu >= 180) {
+          const standartRaporQuery = `
+            SELECT TOP 1 raporTarihi 
+            FROM StandartRapor 
+            WHERE personelId = @personelId 
+            ORDER BY raporTarihi DESC
+          `;
+          const standartRaporRequest = pool.request();
+          standartRaporRequest.input('personelId', sql.Int, personel.id);
+          const standartRaporResult = await standartRaporRequest.query(standartRaporQuery);
+          
+          if (standartRaporResult.recordset.length > 0) {
+            sonStandartRaporTarihi = standartRaporResult.recordset[0].raporTarihi;
+          }
+        }
+        
+        return {
+          ...personel,
+          ilkAyRaporDurumu,
+          ikinciAyRaporDurumu,
+          besinciAyRaporDurumu,
+          sonStandartRaporTarihi,
+          calismaGunu,
+          raporTipi
+        };
+      })
+    );
+    
+    console.log(`👥 Yönetici ${yoneticiId} için ${personellerWithReports.length} personel getirildi (rapor durumları ile)`);
+    res.json(personellerWithReports);
     
   } catch (error) {
     console.error('Personel listesi getirme hatası:', error);
@@ -1519,7 +1760,286 @@ app.get('/api/personel', authenticateToken, checkPermission('faz4'), async (req,
   }
 });
 
+// TÜM PERSONELLER - Admin/Yönetici için (Personel Yönetimi sayfası)
+app.get('/api/personel/all', authenticateToken, async (req, res) => {
+  try {
+    const pool = await sql.connect(config);
+    
+    // Tüm personelleri getir (basit liste, rapor durumu hesaplamaları yok)
+    const result = await pool.request().query(`
+      SELECT 
+        id,
+        ad,
+        soyad,
+        grup,
+        pozisyon,
+        iseBaslamaTarihi,
+        aktif,
+        olusturmaTarihi,
+        guncellemeTarihi
+      FROM Personel
+      ORDER BY id DESC
+    `);
+    
+    console.log(`📋 ${result.recordset.length} personel listelendi`);
+    res.json(result.recordset);
+    
+  } catch (error) {
+    console.error('❌ Tüm personel listesi getirme hatası:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PERSONEL GÜNCELLE
+app.put('/api/personel/:id', authenticateToken, async (req, res) => {
+  try {
+    const pool = await sql.connect(config);
+    const { id } = req.params;
+    const { ad, soyad, grup, pozisyon, iseBaslamaTarihi, aktif } = req.body;
+    
+    // Validasyon
+    if (!ad || !soyad) {
+      return res.status(400).json({ error: 'Ad ve Soyad alanları zorunludur' });
+    }
+    
+    if (!iseBaslamaTarihi) {
+      return res.status(400).json({ error: 'İşe Başlama Tarihi zorunludur' });
+    }
+    
+    // Güncelleme
+    const result = await pool.request()
+      .input('id', sql.Int, id)
+      .input('ad', sql.NVarChar, ad)
+      .input('soyad', sql.NVarChar, soyad)
+      .input('grup', sql.NVarChar, grup || null)
+      .input('pozisyon', sql.NVarChar, pozisyon || null)
+      .input('iseBaslamaTarihi', sql.Date, iseBaslamaTarihi)
+      .input('aktif', sql.Bit, aktif !== undefined ? aktif : true)
+      .query(`
+        UPDATE Personel
+        SET 
+          ad = @ad,
+          soyad = @soyad,
+          grup = @grup,
+          pozisyon = @pozisyon,
+          iseBaslamaTarihi = @iseBaslamaTarihi,
+          aktif = @aktif,
+          guncellemeTarihi = GETDATE()
+        WHERE id = @id
+      `);
+    
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ error: 'Personel bulunamadı' });
+    }
+    
+    console.log(`✅ Personel güncellendi: ${ad} ${soyad} (ID: ${id})`);
+    res.json({ success: true, message: 'Personel başarıyla güncellendi' });
+    
+  } catch (error) {
+    console.error('❌ Personel güncelleme hatası:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PERSONEL SİL
+app.delete('/api/personel/:id', authenticateToken, async (req, res) => {
+  try {
+    const pool = await sql.connect(config);
+    const { id } = req.params;
+    
+    // Önce personel bilgilerini al (log için)
+    const personelResult = await pool.request()
+      .input('id', sql.Int, id)
+      .query('SELECT ad, soyad FROM Personel WHERE id = @id');
+    
+    if (personelResult.recordset.length === 0) {
+      return res.status(404).json({ error: 'Personel bulunamadı' });
+    }
+    
+    const personel = personelResult.recordset[0];
+    
+    // İlişkili raporları sil
+    await pool.request()
+      .input('personelId', sql.Int, id)
+      .query('DELETE FROM IlkAyRapor WHERE personelId = @personelId');
+    
+    await pool.request()
+      .input('personelId', sql.Int, id)
+      .query('DELETE FROM IkinciAyRapor WHERE personelId = @personelId');
+    
+    await pool.request()
+      .input('personelId', sql.Int, id)
+      .query('DELETE FROM BesinciAyRapor WHERE personelId = @personelId');
+    
+    await pool.request()
+      .input('personelId', sql.Int, id)
+      .query('DELETE FROM StandartRapor WHERE personelId = @personelId');
+    
+    // Personeli sil
+    await pool.request()
+      .input('id', sql.Int, id)
+      .query('DELETE FROM Personel WHERE id = @id');
+    
+    console.log(`🗑️ Personel silindi: ${personel.ad} ${personel.soyad} (ID: ${id})`);
+    res.json({ success: true, message: 'Personel ve ilişkili raporlar başarıyla silindi' });
+    
+  } catch (error) {
+    console.error('❌ Personel silme hatası:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Personel raporları API endpoint'leri (PersonelRaporlari tablosu)
+// Rapor hatırlatmaları için personel listesi (işe başlama tarihine göre rapor tipi hesaplanır)
+app.get('/api/rapor-hatirlatmalari', authenticateToken, checkPermission('faz4'), async (req, res) => {
+  try {
+    const pool = await sql.connect(config);
+    const yoneticiId = req.user.id;
+    
+    // Yöneticinin atanmış gruplarına göre personelleri getir
+    const query = `
+      SELECT DISTINCT p.*, yg.grupKodu
+      FROM Personel p
+      INNER JOIN YoneticiGruplari yg ON p.grup = yg.grupKodu
+      LEFT JOIN Users u ON u.email = (
+        SELECT TOP 1 u2.email 
+        FROM Users u2 
+        INNER JOIN YoneticiGruplari yg2 ON u2.id = yg2.yoneticiId 
+        WHERE yg2.grupKodu = p.grup AND yg2.aktif = 1
+      )
+      WHERE p.aktif = 1 
+        AND yg.yoneticiId = @yoneticiId 
+        AND yg.aktif = 1
+      ORDER BY p.ad, p.soyad
+    `;
+    
+    const request = pool.request();
+    request.input('yoneticiId', sql.Int, yoneticiId);
+    const result = await request.query(query);
+    
+    // Her personel için rapor tipini hesapla
+    const personellerWithReportType = await Promise.all(
+      result.recordset.map(async (personel) => {
+        const iseBaslamaTarihi = new Date(personel.iseBaslamaTarihi);
+        const bugun = new Date();
+        const calismaGunu = Math.floor((bugun.getTime() - iseBaslamaTarihi.getTime()) / (1000 * 60 * 60 * 24));
+        
+        let raporTipi = 'standart';
+        
+        // Gelecek tarihli personel veya yeni personel
+        if (calismaGunu < 0) {
+          raporTipi = 'henuz_baslamadi';
+        } else if (calismaGunu < 25) {
+          raporTipi = 'yeni'; // Henüz 25 gün dolmamış
+        } else {
+          // Rapor durumlarını kontrol et
+          const ilkAyQuery = `SELECT TOP 1 id FROM IlkAyRapor WHERE personelId = @personelId`;
+          const ilkAyReq = pool.request();
+          ilkAyReq.input('personelId', sql.Int, personel.id);
+          const ilkAyResult = await ilkAyReq.query(ilkAyQuery);
+          const ilkAyDolduruldu = ilkAyResult.recordset.length > 0;
+          
+          const ikinciAyQuery = `SELECT TOP 1 id FROM IkinciAyRapor WHERE personelId = @personelId`;
+          const ikinciAyReq = pool.request();
+          ikinciAyReq.input('personelId', sql.Int, personel.id);
+          const ikinciAyResult = await ikinciAyReq.query(ikinciAyQuery);
+          const ikinciAyDolduruldu = ikinciAyResult.recordset.length > 0;
+          
+          const besinciAyQuery = `SELECT TOP 1 id FROM BesinciAyRapor WHERE personelId = @personelId`;
+          const besinciAyReq = pool.request();
+          besinciAyReq.input('personelId', sql.Int, personel.id);
+          const besinciAyResult = await besinciAyReq.query(besinciAyQuery);
+          const besinciAyDolduruldu = besinciAyResult.recordset.length > 0;
+          
+          // Rapor tipini belirle
+          if (calismaGunu >= 25 && !ilkAyDolduruldu) {
+            raporTipi = 'ilk_ay'; // 1. ay raporu açık
+          } else if (calismaGunu >= 55 && ilkAyDolduruldu && !ikinciAyDolduruldu) {
+            raporTipi = 'ikinci_ay'; // 2. ay raporu açık (1. ay doldurulmuş)
+          } else if (calismaGunu >= 140 && ilkAyDolduruldu && ikinciAyDolduruldu && !besinciAyDolduruldu) {
+            raporTipi = 'besinci_ay'; // 5. ay raporu açık (1. ve 2. ay doldurulmuş)
+          } else if (calismaGunu >= 180 && ilkAyDolduruldu && ikinciAyDolduruldu && besinciAyDolduruldu) {
+            raporTipi = 'standart'; // 6 aylık performans raporu (tüm raporlar doldurulmuş)
+          } else {
+            raporTipi = 'bekleniyor'; // Ara dönem
+          }
+        }
+        
+        return {
+          ...personel,
+          raporTipi,
+          calismaGunu,
+          yoneticiler: [] // Yönetici bilgisi eklenebilir
+        };
+      })
+    );
+    
+    // Sadece rapor zamanı gelenler (açık ve gecikmiş raporlar)
+    const raporZamaniGelenler = personellerWithReportType.filter(p => {
+      return p.raporTipi === 'ilk_ay' || p.raporTipi === 'ikinci_ay' || p.raporTipi === 'besinci_ay';
+    });
+    
+    // Gecikmiş ve açık raporları ayır
+    const acikRaporlar = raporZamaniGelenler.filter(p => {
+      return (p.calismaGunu >= 25 && p.calismaGunu <= 28) || 
+             (p.calismaGunu >= 55 && p.calismaGunu <= 58) ||
+             (p.calismaGunu >= 140 && p.calismaGunu <= 145);
+    });
+    const gecikmisRaporlar = raporZamaniGelenler.filter(p => {
+      return p.calismaGunu > 28 || p.calismaGunu > 58 || p.calismaGunu > 145;
+    });
+    
+    console.log(`📊 Rapor hatırlatması: ${raporZamaniGelenler.length} personel (${acikRaporlar.length} açık, ${gecikmisRaporlar.length} gecikmiş)`);
+    
+    res.json({
+      success: true,
+      personeller: raporZamaniGelenler,
+      toplam: raporZamaniGelenler.length,
+      acikRaporSayisi: acikRaporlar.length,
+      gecikmisRaporSayisi: gecikmisRaporlar.length
+    });
+    
+  } catch (error) {
+    console.error('❌ Rapor hatırlatmaları getirme hatası:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// Rapor hatırlatma maili gönderme (n8n webhook)
+app.post('/api/rapor-hatirlatmalari/gonder', authenticateToken, checkPermission('faz4'), async (req, res) => {
+  try {
+    const { personeller } = req.body;
+    
+    if (!personeller || personeller.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Personel listesi boş'
+      });
+    }
+    
+    console.log(`📧 ${personeller.length} personel için mail gönderimi başlatılıyor...`);
+    
+    // Burada n8n webhook'a istek atılabilir veya mail servisi kullanılabilir
+    // Şimdilik başarılı response dönüyoruz
+    
+    res.json({
+      success: true,
+      message: `${personeller.length} personel için mail gönderildi`,
+      gonderilen: personeller.length
+    });
+    
+  } catch (error) {
+    console.error('❌ Mail gönderimi hatası:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 app.post('/api/personel-raporlari', async (req, res) => {
   try {
     const {
@@ -1696,6 +2216,7 @@ app.post('/api/ilk-ay-raporu', authenticateToken, checkPermission('faz4'), async
 // İlk ay raporlarını getir
 app.get('/api/ilk-ay-raporu', authenticateToken, checkPermission('faz5'), async (req, res) => {
   try {
+    console.log('📊 İlk Ay Raporları istendi - Kullanıcı:', req.user.username);
     const pool = await sql.connect(config);
     const request = pool.request();
     

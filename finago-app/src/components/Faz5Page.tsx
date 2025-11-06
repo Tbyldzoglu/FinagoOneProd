@@ -10,6 +10,8 @@ import React, { useState, useEffect } from 'react';
 import '../styles/Faz5Page.css';
 import authService from '../services/authService';
 
+const API_BASE_URL = process.env.REACT_APP_DATABASE_API_URL || 'http://localhost:3001';
+
 interface Personel {
   id: number;
   ad: string;
@@ -116,6 +118,13 @@ const Faz5Page: React.FC<Faz5PageProps> = ({ onNavigate }) => {
   const [raporDetayModalOpen, setRaporDetayModalOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [hasPermission, setHasPermission] = useState<boolean>(false);
+  
+  // Filtre state'leri
+  const [raporTipiFilter, setRaporTipiFilter] = useState<string>('all'); // 'all', 'ilk_ay', 'ikinci_ay', 'alti_ay', 'standart'
+  const [isimArama, setIsimArama] = useState<string>(''); // İsim/Soyad arama
+  
+  // Tüm raporlar state'i
+  const [tumRaporlar, setTumRaporlar] = useState<any[]>([]);
 
   // Grup ve pozisyon tanımları
   const grupTanımları = {
@@ -140,6 +149,87 @@ const Faz5Page: React.FC<Faz5PageProps> = ({ onNavigate }) => {
     'UI': 'UI Designer'
   };
 
+  // Tüm raporları yükle
+  const fetchTumRaporlar = async () => {
+    try {
+      setLoading(true);
+      
+      const [ilkAyResponse, ikinciAyResponse, standartResponse] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/ilk-ay-raporu`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...authService.getAuthHeader()
+          }
+        }),
+        fetch(`${API_BASE_URL}/api/ikinci-ay-raporu`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...authService.getAuthHeader()
+          }
+        }),
+        fetch(`${API_BASE_URL}/api/standart-rapor`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...authService.getAuthHeader()
+          }
+        })
+      ]);
+
+      let allRaporlar: any[] = [];
+
+      if (ilkAyResponse.ok) {
+        const ilkAyData = await ilkAyResponse.json();
+        console.log('✅ İlk Ay Raporları:', ilkAyData.length, 'adet');
+        allRaporlar = [...allRaporlar, ...ilkAyData.map((rapor: any) => ({ 
+          ...rapor, 
+          raporTipi: 'İlk Ay Raporu',
+          personelAd: rapor.ad,
+          personelSoyad: rapor.soyad
+        }))];
+      } else {
+        console.error('❌ İlk Ay Raporları yüklenemedi:', ilkAyResponse.status, ilkAyResponse.statusText);
+      }
+
+      if (ikinciAyResponse.ok) {
+        const ikinciAyData = await ikinciAyResponse.json();
+        console.log('✅ İkinci Ay Raporları:', ikinciAyData.length, 'adet');
+        allRaporlar = [...allRaporlar, ...ikinciAyData.map((rapor: any) => ({ 
+          ...rapor, 
+          raporTipi: 'İkinci Ay Raporu',
+          personelAd: rapor.ad,
+          personelSoyad: rapor.soyad
+        }))];
+      } else {
+        console.error('❌ İkinci Ay Raporları yüklenemedi:', ikinciAyResponse.status, ikinciAyResponse.statusText);
+      }
+
+      if (standartResponse.ok) {
+        const standartData = await standartResponse.json();
+        console.log('✅ Standart Raporlar:', standartData.length, 'adet');
+        allRaporlar = [...allRaporlar, ...standartData.map((rapor: any) => ({ 
+          ...rapor, 
+          raporTipi: 'Standart Rapor',
+          personelAd: rapor.ad,
+          personelSoyad: rapor.soyad
+        }))];
+      } else {
+        console.error('❌ Standart Raporlar yüklenemedi:', standartResponse.status, standartResponse.statusText);
+      }
+
+      // Tarihe göre sırala (en yeni önce)
+      allRaporlar.sort((a, b) => new Date(b.raporTarihi).getTime() - new Date(a.raporTarihi).getTime());
+      
+      setTumRaporlar(allRaporlar);
+      console.log('✅ Toplam rapor yüklendi:', allRaporlar.length);
+      
+    } catch (error) {
+      console.error('Tüm raporları yükleme hatası:', error);
+      setError('Raporlar yüklenirken hata oluştu: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Personel listesini yükle
   useEffect(() => {
     // Yetki kontrolü yap
@@ -148,6 +238,7 @@ const Faz5Page: React.FC<Faz5PageProps> = ({ onNavigate }) => {
     
     if (permission) {
       fetchPersonnel();
+      fetchTumRaporlar(); // Tüm raporları yükle
     } else {
       setError('Bu sayfaya erişim yetkiniz bulunmamaktadır.');
       setLoading(false);
@@ -157,7 +248,7 @@ const Faz5Page: React.FC<Faz5PageProps> = ({ onNavigate }) => {
   const fetchPersonnel = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3001/api/personel', {
+      const response = await fetch(`${API_BASE_URL}/api/personel`, {
         headers: {
           'Content-Type': 'application/json',
           ...authService.getAuthHeader()
@@ -208,13 +299,13 @@ const Faz5Page: React.FC<Faz5PageProps> = ({ onNavigate }) => {
       
       // Paralel olarak tüm rapor türlerini çek
       const [ilkAyResponse, ikinciAyResponse, standartResponse] = await Promise.all([
-        fetch('http://localhost:3001/api/ilk-ay-raporu', {
+        fetch(`${API_BASE_URL}/api/ilk-ay-raporu`, {
           headers: authService.getAuthHeader()
         }),
-        fetch('http://localhost:3001/api/ikinci-ay-raporu', {
+        fetch(`${API_BASE_URL}/api/ikinci-ay-raporu`, {
           headers: authService.getAuthHeader()
         }),
-        fetch('http://localhost:3001/api/standart-rapor', {
+        fetch(`${API_BASE_URL}/api/standart-rapor`, {
           headers: authService.getAuthHeader()
         })
       ]);
@@ -261,6 +352,57 @@ const Faz5Page: React.FC<Faz5PageProps> = ({ onNavigate }) => {
   const handleRaporClick = (rapor: any) => {
     setSelectedRapor(rapor);
     setRaporDetayModalOpen(true);
+  };
+
+  // Rapor ortalama puanını hesapla
+  const calculateAveragePuan = (rapor: any): number => {
+    if (rapor.raporTipi === 'İlk Ay Raporu' || rapor.raporTipi === 'İkinci Ay Raporu') {
+      // İlk ve İkinci ay raporlarında sadece soru4_puan var
+      return rapor.soru4_puan || 0;
+    } else if (rapor.raporTipi === 'Standart Rapor') {
+      // Standart raporda tüm puanların ortalaması
+      const puanlar = [
+        rapor.soru1_puan || 0,
+        rapor.soru2_puan || 0,
+        rapor.soru3_puan || 0,
+        rapor.soru4_puan || 0,
+        rapor.soru5_puan || 0,
+        rapor.soru6_puan || 0
+      ];
+      const toplam = puanlar.reduce((acc, val) => acc + val, 0);
+      return toplam / puanlar.length;
+    }
+    return 0;
+  };
+
+  // Raporları filtrele
+  const filterRaporlar = (raporlar: any[]): any[] => {
+    return raporlar.filter(rapor => {
+      // Rapor tipi filtresi
+      if (raporTipiFilter !== 'all') {
+        if (raporTipiFilter === 'ilk_ay' && rapor.raporTipi !== 'İlk Ay Raporu') return false;
+        if (raporTipiFilter === 'ikinci_ay' && rapor.raporTipi !== 'İkinci Ay Raporu') return false;
+        if (raporTipiFilter === 'alti_ay' && rapor.raporTipi !== 'Altı Aylık Rapor') return false;
+        if (raporTipiFilter === 'standart' && rapor.raporTipi !== 'Standart Rapor') return false;
+      }
+
+      // İsim arama filtresi
+      if (isimArama.trim() !== '') {
+        const aramaMetni = isimArama.toLowerCase().trim();
+        const personelAd = (rapor.personelAd || rapor.ad || '').toLowerCase();
+        const personelSoyad = (rapor.personelSoyad || rapor.soyad || '').toLowerCase();
+        const tamIsim = `${personelAd} ${personelSoyad}`;
+        
+        // Arama metninin ad, soyad veya tam isimde geçip geçmediğini kontrol et
+        if (!tamIsim.includes(aramaMetni) && 
+            !personelAd.includes(aramaMetni) && 
+            !personelSoyad.includes(aramaMetni)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
   };
 
   const toggleGroup = (grupAdi: string) => {
@@ -563,64 +705,156 @@ const Faz5Page: React.FC<Faz5PageProps> = ({ onNavigate }) => {
           <div className="header-icon">📊</div>
           <div className="header-text">
             <h1>Rapor Görüntüleme</h1>
-            <p>Personel kartlarına tıklayarak raporlarını görüntüleyin</p>
+            <p>Tüm raporları görüntüleyin ve filtreleyin</p>
           </div>
-          <button 
-            className="btn-primary"
-            onClick={() => {
-              const newGruplar = gruplar.map(grup => ({ ...grup, acik: true }));
-              setGruplar(newGruplar);
-            }}
-          >
-            Tümünü Aç
-          </button>
+        </div>
+      </div>
+      
+      {/* Filtre Bölümü */}
+      <div className="filtre-container">
+        <div className="filtre-section">
+          <div className="filtre-grup">
+            <label htmlFor="raporTipiFilter">
+              <span className="filter-icon">🔍</span>
+              Rapor Tipi:
+            </label>
+            <select 
+              id="raporTipiFilter"
+              value={raporTipiFilter} 
+              onChange={(e) => setRaporTipiFilter(e.target.value)}
+              className="filter-select"
+            >
+              <option value="all">Tüm Raporlar ({tumRaporlar.length})</option>
+              <option value="ilk_ay">1. Ay Raporu ({tumRaporlar.filter(r => r.raporTipi === 'İlk Ay Raporu').length})</option>
+              <option value="ikinci_ay">2. Ay Raporu ({tumRaporlar.filter(r => r.raporTipi === 'İkinci Ay Raporu').length})</option>
+              <option value="alti_ay">6. Ay Raporu ({tumRaporlar.filter(r => r.raporTipi === 'Altı Aylık Rapor').length})</option>
+              <option value="standart">Standart Rapor ({tumRaporlar.filter(r => r.raporTipi === 'Standart Rapor').length})</option>
+            </select>
+          </div>
+          
+          <div className="filtre-grup">
+            <label htmlFor="isimArama">
+              <span className="filter-icon">🔎</span>
+              Personel Ara:
+            </label>
+            <input 
+              id="isimArama"
+              type="text"
+              value={isimArama} 
+              onChange={(e) => setIsimArama(e.target.value)}
+              placeholder="İsim veya soyad yazın..."
+              className="filter-input"
+            />
+          </div>
+          
+          {(raporTipiFilter !== 'all' || isimArama.trim() !== '') && (
+            <button 
+              className="btn-reset-filters"
+              onClick={() => {
+                setRaporTipiFilter('all');
+                setIsimArama('');
+              }}
+            >
+              🔄 Filtreleri Temizle
+            </button>
+          )}
+          
+          <div className="filtre-sonuc">
+            <span className="sonuc-badge">{filterRaporlar(tumRaporlar).length} rapor bulundu</span>
+          </div>
         </div>
       </div>
 
       {/* Grup Listesi */}
       <div className="gruplar-container">
-        {gruplar.map((grup) => (
-          <div key={grup.adi} className="grup-section">
-            <div 
-              className="grup-header"
-              onClick={() => toggleGroup(grup.adi)}
-            >
-              <div className="grup-info">
-                <h3>{grup.adi}</h3>
-                <p>{grup.aciklama}</p>
-                <span className="personel-sayisi">{grup.personeller.length} personel</span>
-              </div>
-              <div className="grup-arrow">
-                {expandedGroups.has(grup.adi) ? '▼' : '▶'}
-              </div>
-            </div>
+        {gruplar.map((grup) => {
+          // Personelleri filtrele
+          const filtreliPersoneller = grup.personeller.filter(personel => {
+            // İsim filtresi
+            if (isimArama.trim() !== '') {
+              const aramaMetni = isimArama.toLowerCase().trim();
+              const personelAd = personel.ad.toLowerCase();
+              const personelSoyad = personel.soyad.toLowerCase();
+              const tamIsim = `${personelAd} ${personelSoyad}`;
+              
+              if (!tamIsim.includes(aramaMetni) && 
+                  !personelAd.includes(aramaMetni) && 
+                  !personelSoyad.includes(aramaMetni)) {
+                return false;
+              }
+            }
             
-            {expandedGroups.has(grup.adi) && (
-              <div className="personel-grid">
-                {grup.personeller.map((personel) => (
-                  <div 
-                    key={personel.id} 
-                    className="personel-card"
-                    onClick={() => handlePersonelClick(personel)}
-                  >
-                    <div className="personel-avatar">👤</div>
-                    <div className="personel-info">
-                      <div className="personel-header">
-                        <h4>{personel.ad} {personel.soyad}</h4>
-                      </div>
-                      <p className="personel-pozisyon">
-                        {pozisyonTanımları[personel.pozisyon as keyof typeof pozisyonTanımları] || personel.pozisyon}
-                      </p>
-                      <p className="personel-grup">
-                        {grup.aciklama}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+            // Rapor tipi filtresi
+            if (raporTipiFilter !== 'all') {
+              // Bu personelin seçili rapor tipinde raporu var mı kontrol et
+              const personelRapor = tumRaporlar.filter(rapor => rapor.personelId === personel.id);
+              
+              if (raporTipiFilter === 'ilk_ay') {
+                const ilkAyRapor = personelRapor.find(r => r.raporTipi === 'İlk Ay Raporu');
+                if (!ilkAyRapor) return false;
+              } else if (raporTipiFilter === 'ikinci_ay') {
+                const ikinciAyRapor = personelRapor.find(r => r.raporTipi === 'İkinci Ay Raporu');
+                if (!ikinciAyRapor) return false;
+              } else if (raporTipiFilter === 'alti_ay') {
+                const altiAyRapor = personelRapor.find(r => r.raporTipi === 'Altı Aylık Rapor');
+                if (!altiAyRapor) return false;
+              } else if (raporTipiFilter === 'standart') {
+                const standartRapor = personelRapor.find(r => r.raporTipi === 'Standart Rapor');
+                if (!standartRapor) return false;
+              }
+            }
+            
+            return true;
+          });
+          
+          // Eğer filtreleme sonucu hiç personel kalmadıysa, bu grubu gösterme
+          if (filtreliPersoneller.length === 0) {
+            return null;
+          }
+          
+          return (
+            <div key={grup.adi} className="grup-section">
+              <div 
+                className="grup-header"
+                onClick={() => toggleGroup(grup.adi)}
+              >
+                <div className="grup-info">
+                  <h3>{grup.adi}</h3>
+                  <p>{grup.aciklama}</p>
+                  <span className="personel-sayisi">{filtreliPersoneller.length} personel</span>
+                </div>
+                <div className="grup-arrow">
+                  {expandedGroups.has(grup.adi) ? '▼' : '▶'}
+                </div>
               </div>
-            )}
-          </div>
-        ))}
+              
+              {expandedGroups.has(grup.adi) && (
+                <div className="personel-grid">
+                  {filtreliPersoneller.map((personel) => (
+                    <div 
+                      key={personel.id} 
+                      className="personel-card"
+                      onClick={() => handlePersonelClick(personel)}
+                    >
+                      <div className="personel-avatar">👤</div>
+                      <div className="personel-info">
+                        <div className="personel-header">
+                          <h4>{personel.ad} {personel.soyad}</h4>
+                        </div>
+                        <p className="personel-pozisyon">
+                          {pozisyonTanımları[personel.pozisyon as keyof typeof pozisyonTanımları] || personel.pozisyon}
+                        </p>
+                        <p className="personel-grup">
+                          {grup.aciklama}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Personel Raporları Modal */}
@@ -628,7 +862,12 @@ const Faz5Page: React.FC<Faz5PageProps> = ({ onNavigate }) => {
         <div className="modal-overlay" onClick={() => setRaporModalOpen(false)}>
           <div className="rapor-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{selectedPersonel.ad} {selectedPersonel.soyad} - Raporları</h2>
+              <div>
+                <h2>{selectedPersonel.ad} {selectedPersonel.soyad} - Raporları</h2>
+                <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>
+                  {filterRaporlar(personelRaporlar).length} / {personelRaporlar.length} rapor gösteriliyor
+                </p>
+              </div>
               <button 
                 className="modal-close"
                 onClick={() => setRaporModalOpen(false)}
@@ -636,10 +875,11 @@ const Faz5Page: React.FC<Faz5PageProps> = ({ onNavigate }) => {
                 ×
               </button>
             </div>
+            
             <div className="modal-content">
-              {personelRaporlar.length > 0 ? (
+              {filterRaporlar(personelRaporlar).length > 0 ? (
                 <div className="rapor-grid">
-                  {personelRaporlar.map((rapor, index) => (
+                  {filterRaporlar(personelRaporlar).map((rapor, index) => (
                     <div key={index} className="rapor-card" onClick={() => handleRaporClick(rapor)}>
                       <div className="rapor-header">
                         <div className="rapor-title-section">
@@ -681,7 +921,23 @@ const Faz5Page: React.FC<Faz5PageProps> = ({ onNavigate }) => {
                 </div>
               ) : (
                 <div className="no-reports">
-                  <p>Bu personel için henüz rapor bulunmuyor.</p>
+                  <div className="no-reports-icon">📭</div>
+                  <h3>Rapor Bulunamadı</h3>
+                  <p>{personelRaporlar.length > 0 
+                    ? 'Seçili filtrelere uygun rapor bulunmamaktadır.' 
+                    : 'Bu personel için henüz rapor bulunmuyor.'}</p>
+                  {personelRaporlar.length > 0 && (raporTipiFilter !== 'all' || isimArama.trim() !== '') && (
+                    <button 
+                      className="btn-primary"
+                      onClick={() => {
+                        setRaporTipiFilter('all');
+                        setIsimArama('');
+                      }}
+                      style={{ marginTop: '1rem' }}
+                    >
+                      Filtreleri Temizle
+                    </button>
+                  )}
                 </div>
               )}
             </div>

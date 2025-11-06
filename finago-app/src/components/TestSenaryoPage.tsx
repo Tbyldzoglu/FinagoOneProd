@@ -6,6 +6,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import '../styles/TestSenaryoPage.css';
 import mammoth from 'mammoth';
+import JSZip from 'jszip';
 
 interface TestSenaryoState {
   status: 'idle' | 'uploading' | 'processing' | 'completed' | 'error';
@@ -56,18 +57,107 @@ const TestSenaryoPage: React.FC<TestSenaryoPageProps> = ({ onNavigate }) => {
    */
   const extractStructuredFromDocx = async (file: File) => {
     const arrayBuffer = await file.arrayBuffer();
-    const result = await mammoth.convertToHtml({ arrayBuffer });
     
-    // HTML'i parse et
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(result.value, 'text/html');
+    // Mammoth options - daha tolerant parsing
+    const options = {
+      arrayBuffer,
+      ignoreEmptyParagraphs: true,
+      convertImage: mammoth.images.imgElement(function(image: any) {
+        return image.read("base64").then(function(imageBuffer: string) {
+          return {
+            src: "data:" + image.contentType + ";base64," + imageBuffer
+          };
+        });
+      })
+    };
+    
+    try {
+      const result = await mammoth.convertToHtml(options);
+      
+      // Hataları logla (varsa)
+      if (result.messages && result.messages.length > 0) {
+        console.warn('⚠️ Mammoth parse uyarıları:', result.messages);
+      }
+      
+      // HTML'i parse et
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(result.value, 'text/html');
+      
+      return doc;
+    } catch (error) {
+      console.error('❌ Mammoth parse hatası:', error);
+      
+      // Fallback 1: Basit text extraction dene
+      try {
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        console.log('ℹ️ Fallback 1: Raw text extraction kullanıldı');
+        
+        // Raw text'i HTML'e çevir
+        const htmlContent = result.value
+          .split('\n')
+          .map(line => `<p>${line}</p>`)
+          .join('');
+        
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlContent, 'text/html');
+        
+        return doc;
+      } catch (fallbackError1) {
+        console.error('❌ Fallback 1 başarısız:', fallbackError1);
+        
+        // Fallback 2: JSZip ile doğrudan XML'den text extraction
+        try {
+          console.log('ℹ️ Fallback 2: JSZip ile XML extraction deneniyor...');
+          const zip = new JSZip();
+          const zipContent = await zip.loadAsync(arrayBuffer);
+          
+          // word/document.xml dosyasını oku
+          const documentXml = await zipContent.file('word/document.xml')?.async('text');
+          
+          if (!documentXml) {
+            throw new Error('word/document.xml bulunamadı');
+          }
+          
+          // XML'den text node'ları çıkar (basit regex ile)
+          // <w:t>...</w:t> etiketleri arasındaki text'leri al
+          const textMatches = documentXml.match(/<w:t[^>]*>([^<]*)<\/w:t>/g);
+          const textContent = textMatches 
+            ? textMatches.map(match => {
+                const textMatch = match.match(/<w:t[^>]*>([^<]*)<\/w:t>/);
+                return textMatch ? textMatch[1] : '';
+              }).join(' ')
+            : '';
+          
+          console.log(`✅ JSZip extraction başarılı: ${textContent.length} karakter`);
+          
+          // Text'i HTML paragraflarına çevir
+          const htmlContent = textContent
+            .split(/[.!?]\s+/)
+            .filter(sentence => sentence.trim().length > 0)
+            .map(sentence => `<p>${sentence.trim()}.</p>`)
+            .join('');
+          
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(htmlContent || '<p>Boş doküman</p>', 'text/html');
+          
+          return doc;
+        } catch (fallbackError2) {
+          console.error('❌ Fallback 2 (JSZip) da başarısız:', fallbackError2);
+          throw new Error('DOCX dosyası okunamadı. Export edilmiş dosyalar için test senaryosu oluşturulamaz. Lütfen orijinal Word dosyasını yükleyin.');
+        }
+      }
+    }
+  };
+  
+  const processDocumentStructure = (doc: Document, fileName: string) => {
+    const htmlContent = doc.body.innerHTML;
     
     // Görselleri çıkar ve etiketle
     const images: Array<{id: string, type: string, alt: string}> = [];
     let imageIndex = 0;
     
     // Base64 görselleri çıkar
-    const base64Images = result.value.match(/data:image\/([^;]+);base64,[A-Za-z0-9+/=]+/gi);
+    const base64Images = htmlContent.match(/data:image\/([^;]+);base64,[A-Za-z0-9+/=]+/gi);
     if (base64Images) {
       base64Images.forEach((match) => {
         const parts = match.match(/data:image\/([^;]+);base64,([A-Za-z0-9+/=]+)/);
@@ -82,7 +172,7 @@ const TestSenaryoPage: React.FC<TestSenaryoPageProps> = ({ onNavigate }) => {
     }
     
     // img taglarındaki görselleri çıkar
-    const imgTags = result.value.match(/<img[^>]*>/gi);
+    const imgTags = htmlContent.match(/<img[^>]*>/gi);
     if (imgTags) {
       imgTags.forEach((imgTag) => {
         const altMatch = imgTag.match(/alt="([^"]*)"/);
@@ -96,7 +186,7 @@ const TestSenaryoPage: React.FC<TestSenaryoPageProps> = ({ onNavigate }) => {
     }
     
     // HTML'den görselleri kısa etiketlerle değiştir
-    let cleanHtml = result.value
+    let cleanHtml = htmlContent
       .replace(/<img[^>]*>/gi, (match) => {
         const altMatch = match.match(/alt="([^"]*)"/);
         const alt = altMatch ? altMatch[1] : `Görsel ${imageIndex}`;
@@ -146,7 +236,7 @@ const TestSenaryoPage: React.FC<TestSenaryoPageProps> = ({ onNavigate }) => {
       .trim();
     
     const structuredData = {
-      fileName: file.name,
+      fileName: fileName,
       content: plainText, // Hiyerarşik düz metin
       images: images, // Görsel etiketleri
       elements: Array.from(doc.body.children).map((element, index) => ({
@@ -182,8 +272,11 @@ const TestSenaryoPage: React.FC<TestSenaryoPageProps> = ({ onNavigate }) => {
     });
 
     try {
-      // 1. DOCX'i structured JSON'a çevir
-      const structuredData = await extractStructuredFromDocx(selectedFile);
+      // 1. DOCX'i parse et
+      const doc = await extractStructuredFromDocx(selectedFile);
+      
+      // 2. Structured data'ya çevir
+      const structuredData = processDocumentStructure(doc, selectedFile.name);
       
       setTestSenaryoState({
         status: 'processing',

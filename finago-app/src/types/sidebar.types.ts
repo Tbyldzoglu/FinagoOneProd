@@ -4,7 +4,7 @@
  */
 
 // Menü öğesi etiketi tipleri
-export type BadgeType = 'PRO' | 'AI' | 'NEW' | 'BETA' | 'YENİ' | 'İK' | 'ADMIN';
+export type BadgeType = 'PRO' | 'AI' | 'NEW' | 'BETA' | 'YENİ' | 'İK' | 'ADMIN' | 'YÖNETİM';
 
 // Menü öğesi yapısı
 export interface MenuItem {

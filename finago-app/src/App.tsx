@@ -17,6 +17,7 @@ const LLMAnalysis = React.lazy(() => import('./components/LLMAnalysis'));
 const LLMRequirementAnalysis = React.lazy(() => import('./components/LLMRequirementAnalysis'));
 const TestSenaryoPage = React.lazy(() => import('./components/TestSenaryoPage'));
 const PersonelKayit = React.lazy(() => import('./components/PersonelKayit'));
+const PersonelYonetimi = React.lazy(() => import('./components/PersonelYonetimi'));
 const Faz4Page = React.lazy(() => import('./components/Faz4Page'));
 const Faz5Page = React.lazy(() => import('./components/Faz5Page'));
 const AdminPanel = React.lazy(() => import('./components/AdminPanel'));
@@ -196,6 +197,7 @@ function App() {
             {currentPage === 'llm-tabani-gereksinim' && <LLMRequirementAnalysis onNavigate={handleNavigation} />}
             {currentPage === 'test-senaryosu' && <TestSenaryoPage onNavigate={handleNavigation} />}
             {currentPage === 'personel-kayit' && <PersonelKayit onNavigate={handleNavigation} />}
+            {currentPage === 'personel-yonetimi' && <PersonelYonetimi />}
             {currentPage === 'faz4' && <Faz4Page onNavigate={handleNavigation} />}
             {currentPage === 'faz5' && <Faz5Page onNavigate={handleNavigation} />}
             {currentPage === 'admin-panel' && <AdminPanel />}

@@ -42,14 +42,27 @@ class AuthService {
     localStorage.setItem(this.tokenKey, token);
   }
 
-  // Token'ı al
+  // Token'ı al (backward compatibility için eski 'token' key'ini de kontrol et)
   getToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
+    let token = localStorage.getItem(this.tokenKey);
+    
+    // Yeni key'de yoksa eski key'i kontrol et
+    if (!token) {
+      token = localStorage.getItem('token');
+      // Eski key'den bulunduysa yeni key'e taşı
+      if (token) {
+        this.setToken(token);
+        localStorage.removeItem('token');
+      }
+    }
+    
+    return token;
   }
 
-  // Token'ı sil
+  // Token'ı sil (eski key'i de temizle)
   removeToken(): void {
     localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem('token'); // Backward compatibility
   }
 
   // Kullanıcı bilgilerini kaydet
